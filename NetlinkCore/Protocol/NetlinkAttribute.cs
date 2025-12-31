@@ -1,9 +1,27 @@
 using System;
+using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 namespace NetlinkCore.Protocol;
 
-public readonly ref struct NetlinkAttribute<TName>(TName name, ReadOnlySpan<byte> data) where TName : unmanaged, Enum
+internal readonly ref struct NetlinkAttribute<TAttr>(TAttr name, ReadOnlySpan<byte> data) where TAttr : unmanaged, Enum
 {
-    public TName Name => name;
+    public TAttr Name => name;
+
     public ReadOnlySpan<byte> Data { get; } = data;
+
+    public T AsValue<T>() where T : unmanaged
+    {
+        return Data.Length == Marshal.SizeOf<T>()
+            ? MemoryMarshal.Read<T>(Data)
+            : throw new InvalidOperationException($"Cannot convert attribute value to type {typeof(T).Name} because the size does not match.");
+    }
+
+    public unsafe string AsString()
+    {
+        fixed (byte* ptr = Data)
+            return Utf8StringMarshaller.ConvertToManaged(ptr)!;
+    }
+
+    public NetlinkAttributeCollection<TAttr> AsNested() => new(Data);
 }

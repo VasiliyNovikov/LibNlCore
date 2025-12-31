@@ -2,5 +2,6 @@
   <Import Project="../NetlinkCore.props" />
   <ItemGroup>
     <PackageReference Include="LinuxCore" />
+    <PackageReference Include="NetworkingPrimitivesCore" />
   </ItemGroup>
 </Project>

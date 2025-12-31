@@ -18,5 +18,12 @@ internal unsafe ref struct SpanReader(ReadOnlySpan<byte> buffer)
         return slice;
     }
 
+    public ReadOnlySpan<byte> ReadToEnd()
+    {
+        var slice = _buffer[_position..];
+        _position = _buffer.Length;
+        return slice;
+    }
+
     public ref readonly T Read<T>() where T : unmanaged => ref Unsafe.As<byte, T>(ref MemoryMarshal.GetReference(Read(sizeof(T))));
 }
