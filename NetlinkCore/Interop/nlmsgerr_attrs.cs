@@ -1,6 +1,6 @@
 namespace NetlinkCore.Interop;
 
-internal enum nlmsgerr_attrs
+internal enum nlmsgerr_attrs : ushort
 {
     NLMSGERR_ATTR_UNUSED,
     NLMSGERR_ATTR_MSG,

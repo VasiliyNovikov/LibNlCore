@@ -1,18 +1,16 @@
-using System;
-
 using NetlinkCore.Interop;
 
 namespace NetlinkCore.Protocol;
 
-internal readonly unsafe ref struct NetlinkMessageReader
+internal unsafe ref struct NetlinkMessageReader(SpanReader reader)
 {
-    public NetlinkMessageFlags Flags { get; }
-    public ReadOnlySpan<byte> Payload { get; }
+    private SpanReader _reader = reader;
 
-    public NetlinkMessageReader(SpanReader reader)
+    public readonly bool IsEndOfBuffer => _reader.IsEndOfBuffer;
+
+    public NetlinkMessage Read()
     {
-        ref readonly var header = ref reader.Read<nlmsghdr>();
-        Flags = (NetlinkMessageFlags)header.nlmsg_flags;
-        Payload = reader.Read((int)header.nlmsg_len - sizeof(nlmsghdr));
+        ref readonly var header = ref _reader.Read<nlmsghdr>();
+        return new NetlinkMessage((NetlinkMessageFlags)header.nlmsg_flags, _reader.Read((int)header.nlmsg_len - sizeof(nlmsghdr)));
     }
 }
