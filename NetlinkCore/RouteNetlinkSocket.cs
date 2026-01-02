@@ -13,7 +13,7 @@ public sealed class RouteNetlinkSocket() : NetlinkSocket(NetlinkFamily.Route)
 {
     public Link GetLink(string name)
     {
-        Unsafe.SkipInit<NetlinkBuffer>(out var buffer);
+        GetBuffer(out var buffer);
         var messageWriter = new RouteNetlinkMessageWriter<ifinfomsg, ifinfomsg_type, IFLA_ATTRS>(buffer)
         {
             Type = ifinfomsg_type.RTM_GETLINK,
@@ -33,7 +33,7 @@ public sealed class RouteNetlinkSocket() : NetlinkSocket(NetlinkFamily.Route)
 
     public Link[] GetLinks()
     {
-        Unsafe.SkipInit<NetlinkBuffer>(out var buffer);
+        GetBuffer(out var buffer);
         var messageWriter = new RouteNetlinkMessageWriter<ifinfomsg, ifinfomsg_type, IFLA_ATTRS>(buffer)
         {
             Type = ifinfomsg_type.RTM_GETLINK,
@@ -49,6 +49,48 @@ public sealed class RouteNetlinkSocket() : NetlinkSocket(NetlinkFamily.Route)
             if (message.Type == ifinfomsg_type.RTM_NEWLINK)
                 links.Add(ParseLink(message));
         return [.. links];
+    }
+
+    public void DeleteLink(string name)
+    {
+        GetBuffer(out var buffer);
+        var messageWriter = new RouteNetlinkMessageWriter<ifinfomsg, ifinfomsg_type, IFLA_ATTRS>(buffer)
+        {
+            Type = ifinfomsg_type.RTM_DELLINK,
+            Flags = NetlinkMessageFlags.Request | NetlinkMessageFlags.Ack,
+            PortId = PortId,
+            Header = default
+        };
+        messageWriter.Attributes.Write(IFLA_ATTRS.IFLA_IFNAME, name);
+        Send(messageWriter.Written);
+        var receivedLength = Receive(buffer);
+        var received = (ReadOnlySpan<byte>)buffer[..receivedLength];
+        foreach (var _ in new RouteNetlinkMessageCollection<ifinfomsg, ifinfomsg_type, IFLA_ATTRS>(received)) ;
+    }
+
+    public void CreateVEth(string name, string peerName)
+    {
+        GetBuffer(out var buffer);
+        var messageWriter = new RouteNetlinkMessageWriter<ifinfomsg, ifinfomsg_type, IFLA_ATTRS>(buffer)
+        {
+            Type = ifinfomsg_type.RTM_NEWLINK,
+            Flags = NetlinkMessageFlags.Request | NetlinkMessageFlags.Create | NetlinkMessageFlags.Exclusive | NetlinkMessageFlags.Ack,
+            PortId = PortId,
+            Header = default
+        };
+        messageWriter.Attributes.Write(IFLA_ATTRS.IFLA_IFNAME, name);
+        using (var infoAttrs = messageWriter.Attributes.WriteNested<IFLA_INFO_ATTRS>(IFLA_ATTRS.IFLA_LINKINFO))
+        {
+            infoAttrs.Writer.Write(IFLA_INFO_ATTRS.IFLA_INFO_KIND, "veth");
+            using var vethAttrs = infoAttrs.Writer.WriteNested<VETH_INFO_ATTRS>(IFLA_INFO_ATTRS.IFLA_INFO_DATA);
+            using var peerAttrs = vethAttrs.Writer.WriteNested<IFLA_ATTRS, ifinfomsg>(VETH_INFO_ATTRS.VETH_INFO_PEER);
+            peerAttrs.Header = default;
+            peerAttrs.Writer.Write(IFLA_ATTRS.IFLA_IFNAME, peerName);
+        }
+        Send(messageWriter.Written);
+        var receivedLength = Receive(buffer);
+        var received = (ReadOnlySpan<byte>)buffer[..receivedLength];
+        foreach (var _ in new RouteNetlinkMessageCollection<ifinfomsg, ifinfomsg_type, IFLA_ATTRS>(received)) ;
     }
 
     private static Link ParseLink(RouteNetlinkMessage<ifinfomsg, ifinfomsg_type, IFLA_ATTRS> message)
@@ -72,4 +114,6 @@ public sealed class RouteNetlinkSocket() : NetlinkSocket(NetlinkFamily.Route)
             ? throw new InvalidOperationException($"Link with index '{ifIndex}' is missing a name attribute.")
             : new Link(ifIndex, name, macAddress);
     }
+
+    private static void GetBuffer(out NetlinkBuffer buffer) => Unsafe.SkipInit(out buffer);
 }

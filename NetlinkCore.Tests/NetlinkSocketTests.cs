@@ -48,4 +48,29 @@ public class NetlinkSocketTests
         var error = Assert.ThrowsExactly<NetlinkException>(() => socket.GetLink("lo1234"));
         Assert.AreEqual(LinuxErrorNumber.NoSuchDevice, error.ErrorNumber);
     }
+
+    [TestMethod]
+    public void RouteNetlinkSocket_Create_Delete_VEth()
+    {
+        using var socket = new RouteNetlinkSocket();
+        const string name = "veth1test";
+        const string peerName = "veth2test";
+
+        socket.CreateVEth(name, peerName);
+
+        var link = socket.GetLink(name);
+        Assert.AreEqual(name, link.Name);
+        Assert.IsGreaterThan(0, link.IfIndex);
+
+        var peer = socket.GetLink(peerName);
+        Assert.AreEqual(peerName, peer.Name);
+        Assert.IsGreaterThan(0, peer.IfIndex);
+
+        socket.DeleteLink(name);
+
+        var error = Assert.ThrowsExactly<NetlinkException>(() => socket.GetLink(name));
+        Assert.AreEqual(LinuxErrorNumber.NoSuchDevice, error.ErrorNumber);
+        error = Assert.ThrowsExactly<NetlinkException>(() => socket.GetLink(peerName));
+        Assert.AreEqual(LinuxErrorNumber.NoSuchDevice, error.ErrorNumber);
+    }
 }
