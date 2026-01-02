@@ -93,6 +93,25 @@ public sealed class RouteNetlinkSocket() : NetlinkSocket(NetlinkFamily.Route)
         foreach (var _ in new RouteNetlinkMessageCollection<ifinfomsg, ifinfomsg_type, IFLA_ATTRS>(received)) ;
     }
 
+    public void CreateBridge(string name)
+    {
+        GetBuffer(out var buffer);
+        var messageWriter = new RouteNetlinkMessageWriter<ifinfomsg, ifinfomsg_type, IFLA_ATTRS>(buffer)
+        {
+            Type = ifinfomsg_type.RTM_NEWLINK,
+            Flags = NetlinkMessageFlags.Request | NetlinkMessageFlags.Create | NetlinkMessageFlags.Exclusive | NetlinkMessageFlags.Ack,
+            PortId = PortId,
+            Header = default
+        };
+        messageWriter.Attributes.Write(IFLA_ATTRS.IFLA_IFNAME, name);
+        using (var infoAttrs = messageWriter.Attributes.WriteNested<IFLA_INFO_ATTRS>(IFLA_ATTRS.IFLA_LINKINFO))
+            infoAttrs.Writer.Write(IFLA_INFO_ATTRS.IFLA_INFO_KIND, "bridge");
+        Send(messageWriter.Written);
+        var receivedLength = Receive(buffer);
+        var received = (ReadOnlySpan<byte>)buffer[..receivedLength];
+        foreach (var _ in new RouteNetlinkMessageCollection<ifinfomsg, ifinfomsg_type, IFLA_ATTRS>(received)) ;
+    }
+
     private static Link ParseLink(RouteNetlinkMessage<ifinfomsg, ifinfomsg_type, IFLA_ATTRS> message)
     {
         var ifIndex = message.Header.ifi_index;

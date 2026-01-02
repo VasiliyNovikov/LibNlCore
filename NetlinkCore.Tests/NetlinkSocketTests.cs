@@ -61,16 +61,37 @@ public class NetlinkSocketTests
         var link = socket.GetLink(name);
         Assert.AreEqual(name, link.Name);
         Assert.IsGreaterThan(0, link.IfIndex);
+        Assert.AreNotEqual(default(MACAddress), link.MacAddress);
 
         var peer = socket.GetLink(peerName);
         Assert.AreEqual(peerName, peer.Name);
         Assert.IsGreaterThan(0, peer.IfIndex);
+        Assert.AreNotEqual(default(MACAddress), peer.MacAddress);
 
         socket.DeleteLink(name);
 
         var error = Assert.ThrowsExactly<NetlinkException>(() => socket.GetLink(name));
         Assert.AreEqual(LinuxErrorNumber.NoSuchDevice, error.ErrorNumber);
         error = Assert.ThrowsExactly<NetlinkException>(() => socket.GetLink(peerName));
+        Assert.AreEqual(LinuxErrorNumber.NoSuchDevice, error.ErrorNumber);
+    }
+
+    [TestMethod]
+    public void RouteNetlinkSocket_Create_Delete_Bridge()
+    {
+        using var socket = new RouteNetlinkSocket();
+        const string name = "brtest1";
+
+        socket.CreateBridge(name);
+
+        var link = socket.GetLink(name);
+        Assert.AreEqual(name, link.Name);
+        Assert.IsGreaterThan(0, link.IfIndex);
+        Assert.AreNotEqual(default(MACAddress), link.MacAddress);
+
+        socket.DeleteLink(name);
+
+        var error = Assert.ThrowsExactly<NetlinkException>(() => socket.GetLink(name));
         Assert.AreEqual(LinuxErrorNumber.NoSuchDevice, error.ErrorNumber);
     }
 }
