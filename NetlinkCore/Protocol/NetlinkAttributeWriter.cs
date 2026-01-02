@@ -31,24 +31,29 @@ internal readonly unsafe ref struct NetlinkAttributeWriter<TAttr>(SpanWriter wri
         buffer[^1] = 0;
     }
 
-    public NestedScope WriteNested(TAttr name)
+    public NestedScope<TNestedAttr> WriteNested<TNestedAttr>(TAttr name)
+        where TNestedAttr : unmanaged, Enum
     {
         ref var header = ref _writer.Skip<rtattr>();
         header.rta_type = Unsafe.BitCast<TAttr, ushort>(name);
-        return new NestedScope(_writer, ref header.rta_len);
+        return new NestedScope<TNestedAttr>(_writer, ref header.rta_len);
     }
 
-    public readonly ref struct NestedScope : IDisposable
+    public readonly ref struct NestedScope<TNestedAttr> : IDisposable
+        where TNestedAttr : unmanaged, Enum
     {
         private readonly uint _writerStart;
         private readonly ref readonly uint _writerLength;
         private readonly ref ushort _length;
+
+        public NetlinkAttributeWriter<TNestedAttr> Writer { get; }
 
         internal NestedScope(SpanWriter writer, ref ushort length)
         {
             _writerStart = writer.Length;
             _writerLength = ref writer.Length;
             _length = ref length;
+            Writer = new NetlinkAttributeWriter<TNestedAttr>(writer);
         }
 
         public void Dispose() => _length = (ushort)(_writerLength - _writerStart + sizeof(rtattr));

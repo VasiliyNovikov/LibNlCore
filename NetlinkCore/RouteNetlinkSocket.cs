@@ -14,18 +14,18 @@ public sealed class RouteNetlinkSocket() : NetlinkSocket(NetlinkFamily.Route)
     public Link GetLink(string name)
     {
         Unsafe.SkipInit<NetlinkBuffer>(out var buffer);
-        var messageWriter = new RouteNetlinkMessageWriter<ifinfomsg, ifinfomsg_type, ifinfomsg_attrs>(buffer)
+        var messageWriter = new RouteNetlinkMessageWriter<ifinfomsg, ifinfomsg_type, IFLA_ATTRS>(buffer)
         {
             Type = ifinfomsg_type.RTM_GETLINK,
             Flags = NetlinkMessageFlags.Request,
             PortId = PortId,
             Header = default
         };
-        messageWriter.Attributes.Write(ifinfomsg_attrs.IFLA_IFNAME, name);
+        messageWriter.Attributes.Write(IFLA_ATTRS.IFLA_IFNAME, name);
         Send(messageWriter.Written);
         var receivedLength = Receive(buffer);
         var received = (ReadOnlySpan<byte>)buffer[..receivedLength];
-        foreach (var message in new RouteNetlinkMessageCollection<ifinfomsg, ifinfomsg_type, ifinfomsg_attrs>(received))
+        foreach (var message in new RouteNetlinkMessageCollection<ifinfomsg, ifinfomsg_type, IFLA_ATTRS>(received))
             if (message.Type == ifinfomsg_type.RTM_NEWLINK)
                 return ParseLink(message);
         throw new InvalidOperationException($"Link with name '{name}' not found.");
@@ -34,7 +34,7 @@ public sealed class RouteNetlinkSocket() : NetlinkSocket(NetlinkFamily.Route)
     public Link[] GetLinks()
     {
         Unsafe.SkipInit<NetlinkBuffer>(out var buffer);
-        var messageWriter = new RouteNetlinkMessageWriter<ifinfomsg, ifinfomsg_type, ifinfomsg_attrs>(buffer)
+        var messageWriter = new RouteNetlinkMessageWriter<ifinfomsg, ifinfomsg_type, IFLA_ATTRS>(buffer)
         {
             Type = ifinfomsg_type.RTM_GETLINK,
             Flags = NetlinkMessageFlags.Request | NetlinkMessageFlags.Dump,
@@ -45,13 +45,13 @@ public sealed class RouteNetlinkSocket() : NetlinkSocket(NetlinkFamily.Route)
         var receivedLength = Receive(buffer);
         var received = (ReadOnlySpan<byte>)buffer[..receivedLength];
         var links = new List<Link>();
-        foreach (var message in new RouteNetlinkMessageCollection<ifinfomsg, ifinfomsg_type, ifinfomsg_attrs>(received))
+        foreach (var message in new RouteNetlinkMessageCollection<ifinfomsg, ifinfomsg_type, IFLA_ATTRS>(received))
             if (message.Type == ifinfomsg_type.RTM_NEWLINK)
                 links.Add(ParseLink(message));
         return [.. links];
     }
 
-    private static Link ParseLink(RouteNetlinkMessage<ifinfomsg, ifinfomsg_type, ifinfomsg_attrs> message)
+    private static Link ParseLink(RouteNetlinkMessage<ifinfomsg, ifinfomsg_type, IFLA_ATTRS> message)
     {
         var ifIndex = message.Header.ifi_index;
         string? name = null;
@@ -60,10 +60,10 @@ public sealed class RouteNetlinkSocket() : NetlinkSocket(NetlinkFamily.Route)
         {
             switch (attribute.Name)
             {
-                case ifinfomsg_attrs.IFLA_IFNAME:
+                case IFLA_ATTRS.IFLA_IFNAME:
                     name = attribute.AsString();
                     break;
-                case ifinfomsg_attrs.IFLA_ADDRESS:
+                case IFLA_ATTRS.IFLA_ADDRESS:
                     macAddress = attribute.AsValue<MACAddress>();
                     break;
             }

@@ -1,6 +1,6 @@
 namespace NetlinkCore.Interop.Route;
 
-internal enum ifinfomsg_attrs : ushort
+internal enum IFLA_ATTRS : ushort
 {
     IFLA_UNSPEC,
     IFLA_ADDRESS,
