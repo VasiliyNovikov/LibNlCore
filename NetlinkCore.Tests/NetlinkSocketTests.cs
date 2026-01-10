@@ -85,6 +85,7 @@ public class NetlinkSocketTests
     {
         using var socket = new RouteNetlinkSocket();
         const string name = "brtest1";
+        var bridgeMac = MACAddress.Parse("02:12:34:56:78:9A");
 
         socket.CreateBridge(name);
 
@@ -93,6 +94,13 @@ public class NetlinkSocketTests
         Assert.IsGreaterThan(0, link.IfIndex);
         Assert.IsFalse(link.Up);
         Assert.AreNotEqual(default(MACAddress), link.MacAddress);
+
+        var change = link with { MacAddress = bridgeMac, Up = true };
+        socket.UpdateLink(link, change);
+
+        link = socket.GetLink(name);
+        Assert.AreEqual(bridgeMac, link.MacAddress);
+        Assert.IsTrue(link.Up);
 
         socket.DeleteLink(name);
 

@@ -36,6 +36,25 @@ public sealed class RouteNetlinkSocket() : NetlinkSocket(NetlinkFamily.Route)
         return [.. links];
     }
 
+    public void UpdateLink(Link origLink, Link link)
+    {
+        using var buffer = new NetlinkBuffer(NetlinkBufferSize.Small);
+        var writer = GetWriter<ifinfomsg, ifinfomsg_type, IFLA_ATTRS>(buffer);
+        writer.Type = ifinfomsg_type.RTM_SETLINK;
+        writer.Flags = NetlinkMessageFlags.Request | NetlinkMessageFlags.Ack;
+        writer.Header.ifi_index = origLink.IfIndex;
+        if (origLink.Up != link.Up)
+        {
+            writer.Header.ifi_flags = link.Up ? net_device_flags.IFF_UP : 0;
+            writer.Header.ifi_change = net_device_flags.IFF_UP;
+        }
+        if (origLink.Name != link.Name)
+            writer.Attributes.Write(IFLA_ATTRS.IFLA_IFNAME, link.Name);
+        if (origLink.MacAddress != link.MacAddress && link.MacAddress is { } macAddress)
+            writer.Attributes.Write(IFLA_ATTRS.IFLA_ADDRESS, macAddress);
+        Post(buffer, writer);
+    }
+
     public void DeleteLink(string name)
     {
         using var buffer = new NetlinkBuffer(NetlinkBufferSize.Small);
@@ -80,7 +99,7 @@ public sealed class RouteNetlinkSocket() : NetlinkSocket(NetlinkFamily.Route)
     private static Link ParseLink(RouteNetlinkMessage<ifinfomsg, ifinfomsg_type, IFLA_ATTRS> message)
     {
         var ifIndex = message.Header.ifi_index;
-        var up = (message.Header.ifi_flags & NetlinkCore.Interop.Route.net_device_flags.IFF_UP) != 0;
+        var up = (message.Header.ifi_flags & net_device_flags.IFF_UP) != 0;
         string? name = null;
         MACAddress? macAddress = null;
         foreach (var attribute in message.Attributes)
