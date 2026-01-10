@@ -26,6 +26,7 @@ public class NetlinkSocketTests
         Assert.IsNotNull(link);
         Assert.AreEqual("lo", link.Name);
         Assert.IsGreaterThan(0, link.IfIndex);
+        Assert.IsTrue(link.Up);
         Assert.AreEqual(default(MACAddress), link.MacAddress);
     }
 
@@ -38,6 +39,7 @@ public class NetlinkSocketTests
         var lo = links.Single(l => l.Name == "lo");
         Assert.AreEqual("lo", lo.Name);
         Assert.IsGreaterThan(0, lo.IfIndex);
+        Assert.IsTrue(lo.Up);
         Assert.AreEqual(default(MACAddress), lo.MacAddress);
     }
 
@@ -61,11 +63,13 @@ public class NetlinkSocketTests
         var link = socket.GetLink(name);
         Assert.AreEqual(name, link.Name);
         Assert.IsGreaterThan(0, link.IfIndex);
+        Assert.IsFalse(link.Up);
         Assert.AreNotEqual(default(MACAddress), link.MacAddress);
 
         var peer = socket.GetLink(peerName);
         Assert.AreEqual(peerName, peer.Name);
         Assert.IsGreaterThan(0, peer.IfIndex);
+        Assert.IsFalse(peer.Up);
         Assert.AreNotEqual(default(MACAddress), peer.MacAddress);
 
         socket.DeleteLink(name);
@@ -87,6 +91,7 @@ public class NetlinkSocketTests
         var link = socket.GetLink(name);
         Assert.AreEqual(name, link.Name);
         Assert.IsGreaterThan(0, link.IfIndex);
+        Assert.IsFalse(link.Up);
         Assert.AreNotEqual(default(MACAddress), link.MacAddress);
 
         socket.DeleteLink(name);

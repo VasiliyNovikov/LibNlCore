@@ -80,6 +80,7 @@ public sealed class RouteNetlinkSocket() : NetlinkSocket(NetlinkFamily.Route)
     private static Link ParseLink(RouteNetlinkMessage<ifinfomsg, ifinfomsg_type, IFLA_ATTRS> message)
     {
         var ifIndex = message.Header.ifi_index;
+        var up = (message.Header.ifi_flags & NetlinkCore.Interop.Route.net_device_flags.IFF_UP) != 0;
         string? name = null;
         MACAddress? macAddress = null;
         foreach (var attribute in message.Attributes)
@@ -96,7 +97,7 @@ public sealed class RouteNetlinkSocket() : NetlinkSocket(NetlinkFamily.Route)
         }
         return name is null
             ? throw new InvalidOperationException($"Link with index '{ifIndex}' is missing a name attribute.")
-            : new Link(ifIndex, name, macAddress);
+            : new Link(ifIndex, name, up, macAddress);
     }
 
     private RouteNetlinkMessageWriter<THeader, TMsgType, TAttr> GetWriter<THeader, TMsgType, TAttr>(Span<byte> buffer)
