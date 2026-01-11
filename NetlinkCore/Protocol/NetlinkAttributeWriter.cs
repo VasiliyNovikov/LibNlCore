@@ -12,7 +12,7 @@ internal readonly unsafe ref struct NetlinkAttributeWriter<TAttr>(SpanWriter wri
 {
     private readonly SpanWriter _writer = writer;
 
-    public Span<byte> Write(TAttr name, int length)
+    private Span<byte> Write(TAttr name, int length)
     {
         ref var header = ref _writer.Skip<rtattr>();
         header.rta_type = Unsafe.BitCast<TAttr, ushort>(name);
