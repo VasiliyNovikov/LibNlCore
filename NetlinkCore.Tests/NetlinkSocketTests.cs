@@ -120,26 +120,30 @@ public class NetlinkSocketTests
 
         socket.CreateBridge(brName);
         socket.CreateVEth(vethName, vethPeerName);
+        try
+        {
+            var bridge = socket.GetLink(brName);
+            var veth = socket.GetLink(vethName);
 
-        var bridge = socket.GetLink(brName);
-        var veth = socket.GetLink(vethName);
+            Assert.IsNull(veth.MasterIndex);
+            Assert.IsNull(bridge.MasterIndex);
 
-        Assert.IsNull(veth.MasterIndex);
-        Assert.IsNull(bridge.MasterIndex);
+            var vethChange = veth with { MasterIndex = bridge.Index };
+            socket.UpdateLink(veth, vethChange);
 
-        var vethChange = veth with { MasterIndex = bridge.Index };
-        socket.UpdateLink(veth, vethChange);
+            veth = socket.GetLink(vethName);
+            Assert.AreEqual(bridge.Index, veth.MasterIndex);
 
-        veth = socket.GetLink(vethName);
-        Assert.AreEqual(bridge.Index, veth.MasterIndex);
+            vethChange = veth with { MasterIndex = null };
+            socket.UpdateLink(veth, vethChange);
 
-        vethChange = veth with { MasterIndex = null };
-        socket.UpdateLink(veth, vethChange);
-
-        veth = socket.GetLink(vethName);
-        Assert.IsNull(veth.MasterIndex);
-
-        socket.DeleteLink(vethName);
-        socket.DeleteLink(brName);
+            veth = socket.GetLink(vethName);
+            Assert.IsNull(veth.MasterIndex);
+        }
+        finally
+        {
+            socket.DeleteLink(vethName);
+            socket.DeleteLink(brName);
+        }
     }
 }
