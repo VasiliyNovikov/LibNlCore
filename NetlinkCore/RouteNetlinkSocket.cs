@@ -42,7 +42,7 @@ public sealed class RouteNetlinkSocket() : NetlinkSocket(NetlinkFamily.Route)
         var writer = GetWriter<ifinfomsg, ifinfomsg_type, IFLA_ATTRS>(buffer);
         writer.Type = ifinfomsg_type.RTM_SETLINK;
         writer.Flags = NetlinkMessageFlags.Request | NetlinkMessageFlags.Ack;
-        writer.Header.ifi_index = origLink.IfIndex;
+        writer.Header.ifi_index = origLink.Index;
         if (origLink.Up != link.Up)
         {
             writer.Header.ifi_flags = link.Up ? net_device_flags.IFF_UP : 0;
@@ -52,6 +52,8 @@ public sealed class RouteNetlinkSocket() : NetlinkSocket(NetlinkFamily.Route)
             writer.Attributes.Write(IFLA_ATTRS.IFLA_IFNAME, link.Name);
         if (origLink.MacAddress != link.MacAddress && link.MacAddress is { } macAddress)
             writer.Attributes.Write(IFLA_ATTRS.IFLA_ADDRESS, macAddress);
+        if (origLink.MasterIndex != link.MasterIndex)
+            writer.Attributes.Write(IFLA_ATTRS.IFLA_MASTER, link.MasterIndex ?? 0);
         Post(buffer, writer);
     }
 
@@ -102,6 +104,7 @@ public sealed class RouteNetlinkSocket() : NetlinkSocket(NetlinkFamily.Route)
         var up = (message.Header.ifi_flags & net_device_flags.IFF_UP) != 0;
         string? name = null;
         MACAddress? macAddress = null;
+        int? masterIndex = null;
         foreach (var attribute in message.Attributes)
         {
             switch (attribute.Name)
@@ -112,11 +115,14 @@ public sealed class RouteNetlinkSocket() : NetlinkSocket(NetlinkFamily.Route)
                 case IFLA_ATTRS.IFLA_ADDRESS:
                     macAddress = attribute.AsValue<MACAddress>();
                     break;
+                case IFLA_ATTRS.IFLA_MASTER:
+                    masterIndex = attribute.AsValue<int>();
+                    break;
             }
         }
         return name is null
             ? throw new InvalidOperationException($"Link with index '{ifIndex}' is missing a name attribute.")
-            : new Link(ifIndex, name, up, macAddress);
+            : new Link(ifIndex, name, up, macAddress, masterIndex);
     }
 
     private RouteNetlinkMessageWriter<THeader, TMsgType, TAttr> GetWriter<THeader, TMsgType, TAttr>(Span<byte> buffer)
