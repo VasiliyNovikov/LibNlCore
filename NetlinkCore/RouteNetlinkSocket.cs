@@ -67,13 +67,17 @@ public sealed class RouteNetlinkSocket() : NetlinkSocket(NetlinkFamily.Route)
         Post(buffer, writer);
     }
 
-    public void CreateVEth(string name, string peerName)
+    public void CreateVEth(string name, string peerName, int? rxQueueCount = null, int? txQueueCount = null)
     {
         using var buffer = new NetlinkBuffer(NetlinkBufferSize.Small);
         var writer = GetWriter<ifinfomsg, ifinfomsg_type, IFLA_ATTRS>(buffer);
         writer.Type = ifinfomsg_type.RTM_NEWLINK;
         writer.Flags = NetlinkMessageFlags.Request | NetlinkMessageFlags.Create | NetlinkMessageFlags.Exclusive | NetlinkMessageFlags.Ack;
         writer.Attributes.Write(IFLA_ATTRS.IFLA_IFNAME, name);
+        if (rxQueueCount is not null)
+            writer.Attributes.Write(IFLA_ATTRS.IFLA_NUM_RX_QUEUES, rxQueueCount.Value);
+        if (txQueueCount is not null)
+            writer.Attributes.Write(IFLA_ATTRS.IFLA_NUM_TX_QUEUES, txQueueCount.Value);
         using (var infoAttrs = writer.Attributes.WriteNested<IFLA_INFO_ATTRS>(IFLA_ATTRS.IFLA_LINKINFO))
         {
             infoAttrs.Writer.Write(IFLA_INFO_ATTRS.IFLA_INFO_KIND, "veth");
@@ -81,6 +85,10 @@ public sealed class RouteNetlinkSocket() : NetlinkSocket(NetlinkFamily.Route)
             using var peerAttrs = vethAttrs.Writer.WriteNested<IFLA_ATTRS, ifinfomsg>(VETH_INFO_ATTRS.VETH_INFO_PEER);
             peerAttrs.Header = default;
             peerAttrs.Writer.Write(IFLA_ATTRS.IFLA_IFNAME, peerName);
+            if (rxQueueCount is not null)
+                peerAttrs.Writer.Write(IFLA_ATTRS.IFLA_NUM_RX_QUEUES, rxQueueCount.Value);
+            if (txQueueCount is not null)
+                peerAttrs.Writer.Write(IFLA_ATTRS.IFLA_NUM_TX_QUEUES, txQueueCount.Value);
         }
         Post(buffer, writer);
     }
@@ -105,6 +113,8 @@ public sealed class RouteNetlinkSocket() : NetlinkSocket(NetlinkFamily.Route)
         string? name = null;
         MACAddress? macAddress = null;
         int? masterIndex = null;
+        var rxQueueCount = 0;
+        var txQueueCount = 0;
         foreach (var attribute in message.Attributes)
         {
             switch (attribute.Name)
@@ -118,11 +128,17 @@ public sealed class RouteNetlinkSocket() : NetlinkSocket(NetlinkFamily.Route)
                 case IFLA_ATTRS.IFLA_MASTER:
                     masterIndex = attribute.AsValue<int>();
                     break;
+                case IFLA_ATTRS.IFLA_NUM_RX_QUEUES:
+                    rxQueueCount = attribute.AsValue<int>();
+                    break;
+                case IFLA_ATTRS.IFLA_NUM_TX_QUEUES:
+                    txQueueCount = attribute.AsValue<int>();
+                    break;
             }
         }
         return name is null
             ? throw new InvalidOperationException($"Link with index '{ifIndex}' is missing a name attribute.")
-            : new Link(ifIndex, name, up, macAddress, masterIndex);
+            : new Link(ifIndex, name, up, macAddress, masterIndex, rxQueueCount, txQueueCount);
     }
 
     private RouteNetlinkMessageWriter<THeader, TMsgType, TAttr> GetWriter<THeader, TMsgType, TAttr>(Span<byte> buffer)

@@ -59,17 +59,22 @@ public class NetlinkSocketTests
         using var socket = new RouteNetlinkSocket();
         const string name = "veth1test";
         const string peerName = "veth1ptest";
+        const int queueCount = 3;
 
-        socket.CreateVEth(name, peerName);
+        socket.CreateVEth(name, peerName, queueCount, queueCount);
 
         var link = socket.GetLink(name);
         Assert.AreEqual(name, link.Name);
+        Assert.AreEqual(queueCount, link.RXQueueCount);
+        Assert.AreEqual(queueCount, link.TXQueueCount);
         Assert.IsGreaterThan(0, link.Index);
         Assert.IsFalse(link.Up);
         Assert.AreNotEqual(default(MACAddress), link.MacAddress);
 
         var peer = socket.GetLink(peerName);
         Assert.AreEqual(peerName, peer.Name);
+        Assert.AreEqual(queueCount, peer.RXQueueCount);
+        Assert.AreEqual(queueCount, peer.TXQueueCount);
         Assert.IsGreaterThan(0, peer.Index);
         Assert.IsFalse(peer.Up);
         Assert.AreNotEqual(default(MACAddress), peer.MacAddress);

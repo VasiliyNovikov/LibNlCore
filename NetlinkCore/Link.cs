@@ -2,4 +2,4 @@ using NetworkingPrimitivesCore;
 
 namespace NetlinkCore;
 
-public record Link(int Index, string Name, bool Up, MACAddress? MacAddress, int? MasterIndex);
+public record Link(int Index, string Name, bool Up, MACAddress? MacAddress, int? MasterIndex, int RXQueueCount, int TXQueueCount);
