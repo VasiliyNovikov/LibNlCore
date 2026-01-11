@@ -12,7 +12,7 @@ internal readonly unsafe ref struct NetlinkAttributeWriter<TAttr>(SpanWriter wri
 {
     private readonly SpanWriter _writer = writer;
 
-    private Span<byte> Write(TAttr name, int length)
+    private Span<byte> PrepareWrite(TAttr name, int length)
     {
         ref var header = ref _writer.Skip<rtattr>();
         header.rta_type = Unsafe.BitCast<TAttr, ushort>(name);
@@ -20,13 +20,13 @@ internal readonly unsafe ref struct NetlinkAttributeWriter<TAttr>(SpanWriter wri
         return _writer.Skip(length);
     }
 
-    public void Write<T>(TAttr name, in T value) where T : unmanaged => MemoryMarshal.Write(Write(name, sizeof(T)), value);
+    public void Write<T>(TAttr name, in T value) where T : unmanaged => MemoryMarshal.Write(PrepareWrite(name, sizeof(T)), value);
 
-    public void Write(TAttr name, ReadOnlySpan<byte> value) => value.CopyTo(Write(name, value.Length));
+    public void Write(TAttr name, ReadOnlySpan<byte> value) => value.CopyTo(PrepareWrite(name, value.Length));
 
     public void Write(TAttr name, string value)
     {
-        var buffer = Write(name, Encoding.UTF8.GetByteCount(value) + 1);
+        var buffer = PrepareWrite(name, Encoding.UTF8.GetByteCount(value) + 1);
         Encoding.UTF8.GetBytes(value, buffer);
         buffer[^1] = 0;
     }
