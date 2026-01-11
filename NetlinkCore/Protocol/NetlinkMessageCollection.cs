@@ -1,6 +1,4 @@
 using System;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 
 using NetlinkCore.Interop;
 
@@ -34,10 +32,20 @@ internal readonly unsafe ref struct NetlinkMessageCollection(ReadOnlySpan<byte> 
 
             if (type == NetlinkMessageType.Error)
             {
-                var error = Unsafe.As<byte, nlmsgerr>(ref MemoryMarshal.GetReference(payload)).error;
-                return error == 0
-                    ? MoveNext()
-                    : throw new NetlinkException(error);
+                var errorReader = new SpanReader(payload);
+                var error = errorReader.Read<nlmsgerr>().error;
+                if (error == 0)
+                    return false;
+                var errorAttrs = new NetlinkAttributeCollection<NLMSGERR_ATTRS>(errorReader.ReadToEnd());
+                string? message = null;
+                foreach (var errorAttr in errorAttrs)
+                {
+                    if (errorAttr.Name != NLMSGERR_ATTRS.NLMSGERR_ATTR_MSG)
+                        continue;
+                    message = errorAttr.AsString();
+                    break;
+                }
+                throw new NetlinkException(error, message);
             }
 
             if (type == NetlinkMessageType.Done)
