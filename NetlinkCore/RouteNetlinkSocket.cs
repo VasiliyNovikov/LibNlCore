@@ -4,12 +4,16 @@ using System.Collections.Generic;
 using NetlinkCore.Interop.Route;
 using NetlinkCore.Protocol.Route;
 
+using NetNsCore;
+
 using NetworkingPrimitivesCore;
 
 namespace NetlinkCore;
 
 public sealed class RouteNetlinkSocket() : NetlinkSocket(NetlinkFamily.Route)
 {
+    #region Links
+
     public Link GetLink(string name)
     {
         using var buffer = new NetlinkBuffer(NetlinkBufferSize.Small);
@@ -171,4 +175,25 @@ public sealed class RouteNetlinkSocket() : NetlinkSocket(NetlinkFamily.Route)
     {
         foreach (var _ in Get(buffer, message)) ;
     }
+
+    #endregion
+
+    #region Generic Messages
+
+    public int GetNetNsId(NetNs ns)
+    {
+        using var buffer = new NetlinkBuffer(NetlinkBufferSize.Small);
+        var writer = GetWriter<rtgenmsg, rtgenmsg_type, NETNSA_ATTRS>(buffer);
+        writer.Type = rtgenmsg_type.RTM_GETNSID;
+        writer.Flags = NetlinkMessageFlags.Request;
+        writer.Attributes.Write(NETNSA_ATTRS.NETNSA_FD, ns.Descriptor);
+        foreach (var message in Get(buffer, writer))
+            if (message.Type == rtgenmsg_type.RTM_NEWNSID)
+                foreach (var attribute in message.Attributes)
+                    if (attribute.Name == NETNSA_ATTRS.NETNSA_NSID)
+                        return attribute.AsValue<int>();
+        throw new InvalidOperationException("Failed to get network namespace ID");
+    }
+
+    #endregion
 }
