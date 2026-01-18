@@ -1,14 +1,18 @@
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
 namespace NetlinkCore.Protocol.Route;
 
+[SuppressMessage("Style", "IDE0032:Use auto property")]
 internal readonly ref struct RouteNetlinkMessageWriter<THeader, TAttr>
     where THeader : unmanaged
     where TAttr : unmanaged, Enum
 {
-    private readonly NetlinkMessageWriter _writer;
     private readonly ref THeader _header;
+    private readonly NetlinkMessageWriter _writer;
+
+    public NetlinkMessageWriter Writer => _writer;
 
     public ref THeader Header => ref _header;
 
@@ -27,8 +31,6 @@ internal readonly ref struct RouteNetlinkMessageWriter<THeader, TAttr>
     public ref uint PortId => ref _writer.PortId;
 
     public NetlinkAttributeWriter<TAttr> Attributes { get; }
-
-    public ReadOnlySpan<byte> Written => _writer.PayloadWriter.Written;
 
     public RouteNetlinkMessageWriter(Span<byte> buffer)
     {

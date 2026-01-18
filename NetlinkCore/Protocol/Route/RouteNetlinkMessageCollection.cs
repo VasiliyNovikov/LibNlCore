@@ -3,11 +3,11 @@ using System.Runtime.CompilerServices;
 
 namespace NetlinkCore.Protocol.Route;
 
-internal readonly ref struct RouteNetlinkMessageCollection<THeader, TAttr>(ReadOnlySpan<byte> messageBytes)
+internal readonly ref struct RouteNetlinkMessageCollection<THeader, TAttr>(NetlinkMessageCollection collection)
     where THeader : unmanaged
     where TAttr : unmanaged, Enum
 {
-    private readonly NetlinkMessageCollection _collection = new(messageBytes);
+    private readonly NetlinkMessageCollection _collection = collection;
 
     public Enumerator GetEnumerator() => new(_collection);
 

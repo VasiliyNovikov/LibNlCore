@@ -195,16 +195,13 @@ public sealed class RouteNetlinkSocket() : NetlinkSocket(NetlinkFamily.Route)
         where THeader : unmanaged
         where TAttr : unmanaged, Enum
     {
-        Send(message.Written);
-        var receivedLength = Receive(buffer);
-        var received = (ReadOnlySpan<byte>)buffer[..receivedLength];
-        return new RouteNetlinkMessageCollection<THeader, TAttr>(received);
+        return new RouteNetlinkMessageCollection<THeader, TAttr>(base.Get(buffer, message.Writer));
     }
 
     private void Post<THeader, TAttr>(Span<byte> buffer, RouteNetlinkMessageWriter<THeader, TAttr> message)
         where THeader : unmanaged
         where TAttr : unmanaged, Enum
     {
-        foreach (var _ in Get(buffer, message)) ;
+        base.Post(buffer, message.Writer);
     }
 }
