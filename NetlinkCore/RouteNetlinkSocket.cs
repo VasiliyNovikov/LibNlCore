@@ -202,8 +202,11 @@ public sealed class RouteNetlinkSocket() : NetlinkSocket(NetlinkFamily.Route)
             if (message.Type == rtgenmsg_type.RTM_NEWNSID)
                 foreach (var attribute in message.Attributes)
                     if (attribute.Name == NETNSA_ATTRS.NETNSA_NSID)
-                        return attribute.AsValue<int>();
-        return null;
+                    {
+                        var value = attribute.AsValue<int>();
+                        return value >= 0 ? value : null;
+                    }
+        throw new InvalidOperationException("NetNsId not found");
     }
 
     #endregion
