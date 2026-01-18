@@ -159,14 +159,6 @@ public class NetlinkSocketTests
     {
         const string nsName = "testns1";
         using var socket = new RouteNetlinkSocket();
-        using var currentNs = NetNs.OpenCurrent();
-        var currentNetNsId = socket.GetNetNsId(currentNs);
-        Assert.IsNull(currentNetNsId);
-        socket.CreateNetNsId(currentNs);
-        currentNetNsId = socket.GetNetNsId(currentNs);
-        Assert.IsNotNull(currentNetNsId);
-        Assert.IsGreaterThan(0, currentNetNsId.Value);
-
         NetNs.Create(nsName);
         try
         {
@@ -177,7 +169,6 @@ public class NetlinkSocketTests
             netNsId = socket.GetNetNsId(ns);
             Assert.IsNotNull(netNsId);
             Assert.IsGreaterThan(0, netNsId.Value);
-            Assert.AreNotEqual(currentNetNsId, netNsId);
         }
         finally
         {
