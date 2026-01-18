@@ -10,5 +10,5 @@ public enum NetlinkMessageType
     Done = Constants.NLMSG_DONE,
     Overrun = Constants.NLMSG_OVERRUN,
 
-    Mask = 0xf
+    Mask = 0x7
 }
