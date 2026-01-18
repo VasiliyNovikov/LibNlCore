@@ -197,7 +197,7 @@ public sealed class RouteNetlinkSocket() : NetlinkSocket(NetlinkFamily.Route)
         where THeader : unmanaged
         where TAttr : unmanaged, Enum
     {
-        return new RouteNetlinkMessageCollection<THeader, TAttr>(base.Get(buffer, message.Writer));
+        return new(base.Get(buffer, message.Writer));
     }
 
     private void Post<THeader, TAttr>(Span<byte> buffer, RouteNetlinkMessageWriter<THeader, TAttr> message)
