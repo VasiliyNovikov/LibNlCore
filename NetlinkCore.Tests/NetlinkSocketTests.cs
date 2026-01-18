@@ -4,6 +4,8 @@ using LinuxCore;
 
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
+using NetNsCore;
+
 using NetworkingPrimitivesCore;
 
 namespace NetlinkCore.Tests;
@@ -149,6 +151,37 @@ public class NetlinkSocketTests
         {
             socket.DeleteLink(vethName);
             socket.DeleteLink(brName);
+        }
+    }
+
+    [TestMethod]
+    public void RouteNetlinkSocket_GetNetNsId()
+    {
+        const string nsName = "testns1";
+        using var socket = new RouteNetlinkSocket();
+        using var currentNs = NetNs.OpenCurrent();
+        var currentNetNsId = socket.GetNetNsId(currentNs);
+        Assert.IsNull(currentNetNsId);
+        socket.CreateNetNsId(currentNs);
+        currentNetNsId = socket.GetNetNsId(currentNs);
+        Assert.IsNotNull(currentNetNsId);
+        Assert.IsGreaterThan(0, currentNetNsId.Value);
+
+        NetNs.Create(nsName);
+        try
+        {
+            using var ns = NetNs.Open(nsName);
+            var netNsId = socket.GetNetNsId(ns);
+            Assert.IsNull(netNsId);
+            socket.CreateNetNsId(ns);
+            netNsId = socket.GetNetNsId(ns);
+            Assert.IsNotNull(netNsId);
+            Assert.IsGreaterThan(0, netNsId.Value);
+            Assert.AreNotEqual(currentNetNsId, netNsId);
+        }
+        finally
+        {
+            NetNs.Delete(nsName);
         }
     }
 }

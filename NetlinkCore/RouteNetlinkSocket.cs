@@ -180,7 +180,18 @@ public sealed class RouteNetlinkSocket() : NetlinkSocket(NetlinkFamily.Route)
 
     #region Generic Messages
 
-    public int GetNetNsId(NetNs ns)
+    public void CreateNetNsId(NetNs ns)
+    {
+        using var buffer = new NetlinkBuffer(NetlinkBufferSize.Small);
+        var writer = GetWriter<rtgenmsg, rtgenmsg_type, NETNSA_ATTRS>(buffer);
+        writer.Type = rtgenmsg_type.RTM_GETNSID;
+        writer.Flags = NetlinkMessageFlags.Request;
+        writer.Attributes.Write(NETNSA_ATTRS.NETNSA_FD, ns.Descriptor);
+        writer.Attributes.Write(NETNSA_ATTRS.NETNSA_NSID, -1);
+        Post(buffer, writer);
+    }
+
+    public int? GetNetNsId(NetNs ns)
     {
         using var buffer = new NetlinkBuffer(NetlinkBufferSize.Small);
         var writer = GetWriter<rtgenmsg, rtgenmsg_type, NETNSA_ATTRS>(buffer);
@@ -192,7 +203,7 @@ public sealed class RouteNetlinkSocket() : NetlinkSocket(NetlinkFamily.Route)
                 foreach (var attribute in message.Attributes)
                     if (attribute.Name == NETNSA_ATTRS.NETNSA_NSID)
                         return attribute.AsValue<int>();
-        throw new InvalidOperationException("Failed to get network namespace ID");
+        return null;
     }
 
     #endregion
