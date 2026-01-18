@@ -1,5 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Net;
+using System.Net.Sockets;
+
+using LinuxCore;
 
 using NetlinkCore.Interop.Route;
 using NetlinkCore.Protocol.Route;
@@ -179,6 +183,27 @@ public sealed class RouteNetlinkSocket() : NetlinkSocket(NetlinkFamily.Route)
         return name is null
             ? throw new InvalidOperationException($"Link with index '{ifIndex}' is missing a name attribute.")
             : new Link(ifIndex, name, up, macAddress, masterIndex, rxQueueCount, txQueueCount);
+    }
+
+    #endregion
+
+    #region Addresses
+
+    public void AddAddress(int index, IPAddress address, byte prefixLength)
+    {
+        using var buffer = new NetlinkBuffer(NetlinkBufferSize.Small);
+        var writer = GetWriter<ifaddrmsg, IFA_ATTRS>(buffer);
+        writer.Type = RouteNetlinkMessageType.NewAddress;
+        writer.Flags = NetlinkMessageFlags.Request | NetlinkMessageFlags.Create | NetlinkMessageFlags.Exclusive | NetlinkMessageFlags.Ack;
+        writer.Header.ifa_index = (uint)index;
+        writer.Header.ifa_prefixlen = prefixLength;
+        writer.Header.ifa_family = (byte)(address.AddressFamily == AddressFamily.InterNetwork ? LinuxAddressFamily.Inet : LinuxAddressFamily.Inet6);
+        var size = address.AddressFamily == AddressFamily.InterNetwork ? 4 : 16;
+        var addressBytes = writer.Attributes.PrepareWrite(IFA_ATTRS.IFA_LOCAL, size);
+        address.TryWriteBytes(addressBytes, out _);
+        addressBytes = writer.Attributes.PrepareWrite(IFA_ATTRS.IFA_ADDRESS, size);
+        address.TryWriteBytes(addressBytes, out _);
+        Post(buffer, writer);
     }
 
     #endregion
