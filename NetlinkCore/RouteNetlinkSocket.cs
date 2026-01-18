@@ -74,14 +74,7 @@ public sealed class RouteNetlinkSocket() : NetlinkSocket(NetlinkFamily.Route)
     public void CreateVEth(string name, string peerName, int? rxQueueCount = null, int? txQueueCount = null)
     {
         using var buffer = new NetlinkBuffer(NetlinkBufferSize.Small);
-        var writer = GetWriter<ifinfomsg, IFLA_ATTRS>(buffer);
-        writer.Type = RouteNetlinkMessageType.NewLink;
-        writer.Flags = NetlinkMessageFlags.Request | NetlinkMessageFlags.Create | NetlinkMessageFlags.Exclusive | NetlinkMessageFlags.Ack;
-        writer.Attributes.Write(IFLA_ATTRS.IFLA_IFNAME, name);
-        if (rxQueueCount is not null)
-            writer.Attributes.Write(IFLA_ATTRS.IFLA_NUM_RX_QUEUES, rxQueueCount.Value);
-        if (txQueueCount is not null)
-            writer.Attributes.Write(IFLA_ATTRS.IFLA_NUM_TX_QUEUES, txQueueCount.Value);
+        var writer = BeginCreateLink(buffer, name, rxQueueCount, txQueueCount);
         using (var infoAttrs = writer.Attributes.WriteNested<IFLA_INFO_ATTRS>(IFLA_ATTRS.IFLA_LINKINFO))
         {
             infoAttrs.Writer.Write(IFLA_INFO_ATTRS.IFLA_INFO_KIND, "veth");
@@ -97,17 +90,26 @@ public sealed class RouteNetlinkSocket() : NetlinkSocket(NetlinkFamily.Route)
         Post(buffer, writer);
     }
 
-    public void CreateBridge(string name)
+    public void CreateBridge(string name, int? rxQueueCount = null, int? txQueueCount = null)
     {
         using var buffer = new NetlinkBuffer(NetlinkBufferSize.Small);
-        var writer = GetWriter<ifinfomsg, IFLA_ATTRS>(buffer);
-        writer.Type = RouteNetlinkMessageType.NewLink;
-        writer.Flags = NetlinkMessageFlags.Request | NetlinkMessageFlags.Create | NetlinkMessageFlags.Exclusive | NetlinkMessageFlags.Ack;
-        writer.PortId = PortId;
-        writer.Attributes.Write(IFLA_ATTRS.IFLA_IFNAME, name);
+        var writer = BeginCreateLink(buffer, name, rxQueueCount, txQueueCount);
         using (var infoAttrs = writer.Attributes.WriteNested<IFLA_INFO_ATTRS>(IFLA_ATTRS.IFLA_LINKINFO))
             infoAttrs.Writer.Write(IFLA_INFO_ATTRS.IFLA_INFO_KIND, "bridge");
         Post(buffer, writer);
+    }
+
+    private RouteNetlinkMessageWriter<ifinfomsg, IFLA_ATTRS> BeginCreateLink(Span<byte> buffer, string name, int? rxQueueCount, int? txQueueCount)
+    {
+        var writer = GetWriter<ifinfomsg, IFLA_ATTRS>(buffer);
+        writer.Type = RouteNetlinkMessageType.NewLink;
+        writer.Flags = NetlinkMessageFlags.Request | NetlinkMessageFlags.Create | NetlinkMessageFlags.Exclusive | NetlinkMessageFlags.Ack;
+        writer.Attributes.Write(IFLA_ATTRS.IFLA_IFNAME, name);
+        if (rxQueueCount is not null)
+            writer.Attributes.Write(IFLA_ATTRS.IFLA_NUM_RX_QUEUES, rxQueueCount.Value);
+        if (txQueueCount is not null)
+            writer.Attributes.Write(IFLA_ATTRS.IFLA_NUM_TX_QUEUES, txQueueCount.Value);
+        return writer;
     }
 
     private static Link ParseLink(RouteNetlinkMessage<ifinfomsg, IFLA_ATTRS> message)
