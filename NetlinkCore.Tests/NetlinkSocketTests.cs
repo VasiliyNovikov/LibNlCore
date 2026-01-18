@@ -111,7 +111,7 @@ public class NetlinkSocketTests
         Assert.AreEqual(bridgeMac, link.MacAddress);
         Assert.IsTrue(link.Up);
 
-        socket.DeleteLink(name);
+        socket.DeleteLink(link.Index);
 
         var error = Assert.ThrowsExactly<NetlinkException>(() => socket.GetLink(name));
         Assert.AreEqual(LinuxErrorNumber.NoSuchDevice, error.ErrorNumber);
@@ -155,33 +155,32 @@ public class NetlinkSocketTests
     }
 
     [TestMethod]
-    public void RouteNetlinkSocket_GetNetNsId()
+    public void RouteNetlinkSocket_MoveTo_NetNs()
     {
-        const string nsName = "testns1";
         using var socket = new RouteNetlinkSocket();
-        using var currentNs = NetNs.OpenCurrent();
-        var currentNetNsId = socket.GetNetNsId(currentNs);
-        if (currentNetNsId is null)
-            socket.CreateNetNsId(currentNs);
-        currentNetNsId = socket.GetNetNsId(currentNs);
-        Assert.IsNotNull(currentNetNsId);
-        Assert.IsGreaterThanOrEqualTo(0, currentNetNsId.Value);
+        const string name = "veth3test";
+        const string peerName = "veth3ptest";
+        const string nsName = "testns2";
 
         NetNs.Create(nsName);
+        socket.CreateVEth(name, peerName);
         try
         {
+            var link = socket.GetLink(name);
             using var ns = NetNs.Open(nsName);
-            var netNsId = socket.GetNetNsId(ns);
-            Assert.IsNull(netNsId);
-            socket.CreateNetNsId(ns);
-            netNsId = socket.GetNetNsId(ns);
-            Assert.IsNotNull(netNsId);
-            Assert.IsGreaterThanOrEqualTo(0, netNsId.Value);
-
-            Assert.AreNotEqual(currentNetNsId, netNsId);
+            socket.MoveTo(link.Index, ns);
+            var error = Assert.ThrowsExactly<NetlinkException>(() => socket.GetLink(name));
+            Assert.AreEqual(LinuxErrorNumber.NoSuchDevice, error.ErrorNumber);
+            using (NetNs.Enter(ns))
+            {
+                using var nsSocket = new RouteNetlinkSocket();
+                link = nsSocket.GetLink(name);
+                Assert.AreEqual(name, link.Name);
+            }
         }
         finally
         {
+            socket.DeleteLink(peerName);
             NetNs.Delete(nsName);
         }
     }

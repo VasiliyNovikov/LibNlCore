@@ -13,8 +13,4 @@ public enum RouteNetlinkMessageType
     NewAddress    = 20, // RTM_NEWADDR
     DeleteAddress = 21, // RTM_DELADDR
     GetAddress    = 22, // RTM_GETADDR
-
-    NewNsId       = 88, // RTM_NEWNSID
-    DeleteNsId    = 89, // RTM_DELNSID
-    GetNsId       = 90, // RTM_GETNSID
 }

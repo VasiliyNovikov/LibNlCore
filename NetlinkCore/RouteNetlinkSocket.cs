@@ -71,6 +71,16 @@ public sealed class RouteNetlinkSocket() : NetlinkSocket(NetlinkFamily.Route)
         Post(buffer, writer);
     }
 
+    public void DeleteLink(int index)
+    {
+        using var buffer = new NetlinkBuffer(NetlinkBufferSize.Small);
+        var writer = GetWriter<ifinfomsg, IFLA_ATTRS>(buffer);
+        writer.Type = RouteNetlinkMessageType.DeleteLink;
+        writer.Flags = NetlinkMessageFlags.Request | NetlinkMessageFlags.Ack;
+        writer.Header.ifi_index = index;
+        Post(buffer, writer);
+    }
+
     public void CreateVEth(string name, string peerName, int? rxQueueCount = null, int? txQueueCount = null)
     {
         using var buffer = new NetlinkBuffer(NetlinkBufferSize.Small);
@@ -96,6 +106,17 @@ public sealed class RouteNetlinkSocket() : NetlinkSocket(NetlinkFamily.Route)
         var writer = BeginCreateLink(buffer, name, rxQueueCount, txQueueCount);
         using (var infoAttrs = writer.Attributes.WriteNested<IFLA_INFO_ATTRS>(IFLA_ATTRS.IFLA_LINKINFO))
             infoAttrs.Writer.Write(IFLA_INFO_ATTRS.IFLA_INFO_KIND, "bridge");
+        Post(buffer, writer);
+    }
+
+    public void MoveTo(int index, NetNs ns)
+    {
+        using var buffer = new NetlinkBuffer(NetlinkBufferSize.Small);
+        var writer = GetWriter<ifinfomsg, IFLA_ATTRS>(buffer);
+        writer.Type = RouteNetlinkMessageType.NewLink;
+        writer.Flags = NetlinkMessageFlags.Request | NetlinkMessageFlags.Ack;
+        writer.Header.ifi_index = index;
+        writer.Attributes.Write(IFLA_ATTRS.IFLA_NET_NS_FD, ns.Descriptor);
         Post(buffer, writer);
     }
 
@@ -145,39 +166,6 @@ public sealed class RouteNetlinkSocket() : NetlinkSocket(NetlinkFamily.Route)
         return name is null
             ? throw new InvalidOperationException($"Link with index '{ifIndex}' is missing a name attribute.")
             : new Link(ifIndex, name, up, macAddress, masterIndex, rxQueueCount, txQueueCount);
-    }
-
-    #endregion
-
-    #region Generic Messages
-
-    public void CreateNetNsId(NetNs ns)
-    {
-        using var buffer = new NetlinkBuffer(NetlinkBufferSize.Small);
-        var writer = GetWriter<rtgenmsg, NETNSA_ATTRS>(buffer);
-        writer.Type = RouteNetlinkMessageType.NewNsId;
-        writer.Flags = NetlinkMessageFlags.Request | NetlinkMessageFlags.Create | NetlinkMessageFlags.Exclusive | NetlinkMessageFlags.Ack;
-        writer.Attributes.Write(NETNSA_ATTRS.NETNSA_FD, ns.Descriptor);
-        writer.Attributes.Write(NETNSA_ATTRS.NETNSA_NSID, -1);
-        Post(buffer, writer);
-    }
-
-    public int? GetNetNsId(NetNs ns)
-    {
-        using var buffer = new NetlinkBuffer(NetlinkBufferSize.Small);
-        var writer = GetWriter<rtgenmsg, NETNSA_ATTRS>(buffer);
-        writer.Type = RouteNetlinkMessageType.GetNsId;
-        writer.Flags = NetlinkMessageFlags.Request;
-        writer.Attributes.Write(NETNSA_ATTRS.NETNSA_FD, ns.Descriptor);
-        foreach (var message in Get(buffer, writer))
-            if (message.Type == RouteNetlinkMessageType.NewNsId)
-                foreach (var attribute in message.Attributes)
-                    if (attribute.Name == NETNSA_ATTRS.NETNSA_NSID)
-                    {
-                        var value = attribute.AsValue<int>();
-                        return value >= 0 ? value : null;
-                    }
-        throw new InvalidOperationException("NetNsId not found");
     }
 
     #endregion
