@@ -26,7 +26,7 @@ internal readonly unsafe ref struct NetlinkMessageCollection(ReadOnlySpan<byte> 
             ref readonly var header = ref _reader.Read<nlmsghdr>();
             var rawType = (NetlinkMessageType)header.nlmsg_type;
             var type = rawType & NetlinkMessageType.Mask;
-            var subtype = (int)(rawType & ~NetlinkMessageType.Mask);
+            var subtype = (int)rawType;
             var flags = (NetlinkMessageFlags)header.nlmsg_flags;
             var payload = _reader.Read((int)header.nlmsg_len - sizeof(nlmsghdr));
 

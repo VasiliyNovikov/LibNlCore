@@ -3,9 +3,8 @@ using System.Runtime.CompilerServices;
 
 namespace NetlinkCore.Protocol.Route;
 
-internal readonly ref struct RouteNetlinkMessageWriter<THeader, TMsgType, TAttr>
+internal readonly ref struct RouteNetlinkMessageWriter<THeader, TAttr>
     where THeader : unmanaged
-    where TMsgType : unmanaged, Enum
     where TAttr : unmanaged, Enum
 {
     private readonly NetlinkMessageWriter _writer;
@@ -13,10 +12,10 @@ internal readonly ref struct RouteNetlinkMessageWriter<THeader, TMsgType, TAttr>
 
     public ref THeader Header => ref _header;
 
-    public TMsgType Type
+    public RouteNetlinkMessageType Type
     {
-        get => Unsafe.BitCast<int, TMsgType>(_writer.SubType);
-        set => _writer.SubType = Unsafe.BitCast<TMsgType, int>(value);
+        get => Unsafe.BitCast<int, RouteNetlinkMessageType>(_writer.SubType);
+        set => _writer.SubType = Unsafe.BitCast<RouteNetlinkMessageType, int>(value);
     }
 
     public NetlinkMessageFlags Flags
