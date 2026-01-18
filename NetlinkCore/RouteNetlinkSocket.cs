@@ -184,8 +184,8 @@ public sealed class RouteNetlinkSocket() : NetlinkSocket(NetlinkFamily.Route)
     {
         using var buffer = new NetlinkBuffer(NetlinkBufferSize.Small);
         var writer = GetWriter<rtgenmsg, rtgenmsg_type, NETNSA_ATTRS>(buffer);
-        writer.Type = rtgenmsg_type.RTM_GETNSID;
-        writer.Flags = NetlinkMessageFlags.Request;
+        writer.Type = rtgenmsg_type.RTM_NEWNSID;
+        writer.Flags = NetlinkMessageFlags.Request | NetlinkMessageFlags.Create | NetlinkMessageFlags.Exclusive | NetlinkMessageFlags.Ack;
         writer.Attributes.Write(NETNSA_ATTRS.NETNSA_FD, ns.Descriptor);
         writer.Attributes.Write(NETNSA_ATTRS.NETNSA_NSID, -1);
         Post(buffer, writer);
