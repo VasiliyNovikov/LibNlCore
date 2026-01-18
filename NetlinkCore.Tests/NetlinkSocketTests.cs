@@ -31,6 +31,13 @@ public class NetlinkSocketTests
         Assert.IsTrue(link.Up);
         Assert.IsNull(link.MasterIndex);
         Assert.AreEqual(default(MACAddress), link.MacAddress);
+
+        var sameLink = socket.GetLink(link.Index);
+        Assert.AreEqual(link.Name, sameLink.Name);
+        Assert.AreEqual(link.Index, sameLink.Index);
+        Assert.AreEqual(link.Up, sameLink.Up);
+        Assert.AreEqual(link.MasterIndex, sameLink.MasterIndex);
+        Assert.AreEqual(link.MacAddress, sameLink.MacAddress);
     }
 
     [TestMethod]

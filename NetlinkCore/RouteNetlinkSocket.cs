@@ -24,7 +24,20 @@ public sealed class RouteNetlinkSocket() : NetlinkSocket(NetlinkFamily.Route)
         foreach (var message in Get(buffer, writer))
             if (message.Type == RouteNetlinkMessageType.NewLink)
                 return ParseLink(message);
-        throw new InvalidOperationException($"Link with name '{name}' not found.");
+        throw new InvalidOperationException($"Link with name '{name}' not found");
+    }
+
+    public Link GetLink(int index)
+    {
+        using var buffer = new NetlinkBuffer(NetlinkBufferSize.Small);
+        var writer = GetWriter<ifinfomsg, IFLA_ATTRS>(buffer);
+        writer.Type = RouteNetlinkMessageType.GetLink;
+        writer.Flags = NetlinkMessageFlags.Request;
+        writer.Header.ifi_index = index;
+        foreach (var message in Get(buffer, writer))
+            if (message.Type == RouteNetlinkMessageType.NewLink)
+                return ParseLink(message);
+        throw new InvalidOperationException($"Link with index '{index}' not found");
     }
 
     public Link[] GetLinks()
