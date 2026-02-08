@@ -13,8 +13,8 @@ public sealed class GenericNetlinkSocket() : NetlinkSocket(NetlinkFamily.Generic
         var writer = GetWriter<GENL_CTRL_ATTR>(buffer);
         writer.FamilyId = Constants.GENL_ID_CTRL;
         writer.Flags = NetlinkMessageFlags.Request;
+        writer.Header.version = Constants.GENL_ID_CTRL_VERSION;
         writer.Header.cmd = (byte)GENL_CTRL_CMD.CTRL_CMD_GETFAMILY;
-        writer.Header.version = 1;
         writer.Attributes.Write(GENL_CTRL_ATTR.CTRL_ATTR_FAMILY_NAME, familyName);
         foreach (var message in Get(buffer, writer))
             if (message.Header.cmd == (byte)GENL_CTRL_CMD.CTRL_CMD_NEWFAMILY)
