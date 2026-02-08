@@ -37,7 +37,7 @@ public abstract class NetlinkSocket : LinuxSocketBase
     private protected NetlinkMessageCollection Get(Span<byte> buffer, NetlinkMessageWriter message)
     {
         Send(message);
-        return new(buffer[..Receive(buffer)]);
+        return new(this, buffer);
     }
 
     private protected void Post(Span<byte> buffer, NetlinkMessageWriter message)

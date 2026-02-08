@@ -4,24 +4,23 @@ using NetlinkCore.Interop;
 
 namespace NetlinkCore.Protocol;
 
-internal readonly unsafe ref struct NetlinkMessageCollection(ReadOnlySpan<byte> messageBytes)
+internal readonly unsafe ref struct NetlinkMessageCollection(NetlinkSocket socket, Span<byte> buffer)
 {
-    private readonly ReadOnlySpan<byte> _messageBytes = messageBytes;
+    private readonly Span<byte> _buffer = buffer;
 
-    public Enumerator GetEnumerator() => new(_messageBytes);
+    public Enumerator GetEnumerator() => new(socket, _buffer);
 
-    public ref struct Enumerator
+    public ref struct Enumerator(NetlinkSocket socket, Span<byte> buffer)
     {
-        private SpanReader _reader;
+        private readonly Span<byte> _buffer = buffer;
+        private SpanReader _reader = default;
 
         public NetlinkMessage Current { get; private set; }
-
-        internal Enumerator(ReadOnlySpan<byte> messageBytes) => _reader = new SpanReader(messageBytes);
 
         public bool MoveNext()
         {
             if (_reader.IsEndOfBuffer)
-                return false;
+                _reader = new SpanReader(_buffer[..socket.Receive(_buffer)]);
 
             ref readonly var header = ref _reader.Read<nlmsghdr>();
             var rawType = (NetlinkMessageType)header.nlmsg_type;
