@@ -213,6 +213,40 @@ public class NetlinkSocketTests
     [TestMethod]
     public void RouteNetlinkSocket_Add_Delete_Address()
     {
+        const string name = "braddrtst";
+        var ipv4 = new LinkAddress(IPAddress.Parse("192.168.128.44"), 24);
+        var ipv6 = new LinkAddress(IPAddress.Parse("2001:db8::4444"), 64, true);
+
         using var socket = new RouteNetlinkSocket();
+        socket.CreateBridge(name);
+        try
+        {
+            var link = socket.GetLink(name);
+            Assert.IsEmpty(socket.GetAddresses(link.Index));
+
+            socket.AddAddress(link.Index, ipv4);
+            socket.AddAddress(link.Index, ipv6);
+
+            var addresses = socket.GetAddresses(link.Index).OrderBy(a => a.AddressFamily).ToList();
+
+            Assert.HasCount(2, addresses);
+            var addr = addresses[0];
+            Assert.AreEqual(ipv4.Address, addr.Address);
+            Assert.AreEqual(ipv4.PrefixLength, addr.PrefixLength);
+            Assert.AreEqual(ipv4.NoDad, addr.NoDad);
+
+            addr = addresses[1];
+            Assert.AreEqual(ipv6.Address, addr.Address);
+            Assert.AreEqual(ipv6.PrefixLength, addr.PrefixLength);
+            Assert.AreEqual(ipv6.NoDad, addr.NoDad);
+
+            socket.DeleteAddress(link.Index, ipv4);
+            socket.DeleteAddress(link.Index, ipv6);
+            Assert.IsEmpty(socket.GetAddresses(link.Index));
+        }
+        finally
+        {
+            socket.DeleteLink(name);
+        }
     }
 }
