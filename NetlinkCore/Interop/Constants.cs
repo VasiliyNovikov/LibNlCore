@@ -3,6 +3,7 @@ namespace NetlinkCore.Interop;
 internal static class Constants
 {
     public const int NETLINK_ROUTE = 0;
+    public const int NETLINK_GENERIC = 16;
 
     public const int NETLINK_CAP_ACK = 10;
     public const int NETLINK_EXT_ACK = 11;

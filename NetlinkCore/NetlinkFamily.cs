@@ -4,5 +4,6 @@ namespace NetlinkCore;
 
 public enum NetlinkFamily
 {
-    Route = Constants.NETLINK_ROUTE
+    Route = Constants.NETLINK_ROUTE,
+    Generic = Constants.NETLINK_GENERIC
 }

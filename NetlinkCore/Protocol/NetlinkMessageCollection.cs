@@ -55,3 +55,33 @@ internal readonly unsafe ref struct NetlinkMessageCollection(NetlinkSocket socke
         }
     }
 }
+
+internal readonly ref struct NetlinkMessageCollection<THeader, TAttr>(NetlinkSocket socket, Span<byte> buffer)
+    where THeader : unmanaged
+    where TAttr : unmanaged, Enum
+{
+    private readonly NetlinkMessageCollection _collection = new(socket, buffer);
+
+    public Enumerator GetEnumerator() => new(_collection);
+
+    public ref struct Enumerator
+    {
+        private NetlinkMessageCollection.Enumerator _enumerator;
+
+        public NetlinkMessage<THeader, TAttr> Current { get; private set; }
+
+        internal Enumerator(NetlinkMessageCollection collection) => _enumerator = collection.GetEnumerator();
+
+        public bool MoveNext()
+        {
+            if (!_enumerator.MoveNext())
+                return false;
+            var current = _enumerator.Current;
+            var reader = new SpanReader(current.Payload);
+            ref readonly var header = ref reader.Read<THeader>();
+            var attributes = new NetlinkAttributeCollection<TAttr>(reader.ReadToEnd());
+            Current = new NetlinkMessage<THeader, TAttr>(current.Flags, current.SubType, in header, attributes);
+            return true;
+        }
+    }
+}

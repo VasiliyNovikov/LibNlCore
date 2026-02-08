@@ -32,15 +32,17 @@ public abstract class NetlinkSocket : LinuxSocketBase
 
     private void SetOption(int option, int value) => base.SetOption(LinuxSocketOptionLevel.Netlink, option, value);
 
-    private void Send(NetlinkMessageWriter message) => Send(message.Written);
-
-    private protected NetlinkMessageCollection Get(Span<byte> buffer, NetlinkMessageWriter message)
+    private protected NetlinkMessageCollection<THeader, TAttr> Get<THeader, TAttr>(Span<byte> buffer, NetlinkMessageWriter<THeader, TAttr> message)
+        where THeader : unmanaged
+        where TAttr : unmanaged, Enum
     {
-        Send(message);
+        Send(message.Writer.Written);
         return new(this, buffer);
     }
 
-    private protected void Post(Span<byte> buffer, NetlinkMessageWriter message)
+    private protected void Post<THeader, TAttr>(Span<byte> buffer, NetlinkMessageWriter<THeader, TAttr> message)
+        where THeader : unmanaged
+        where TAttr : unmanaged, Enum
     {
         foreach (var _ in Get(buffer, message)) ;
     }

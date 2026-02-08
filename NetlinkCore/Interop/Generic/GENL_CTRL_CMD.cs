@@ -1,0 +1,16 @@
+namespace NetlinkCore.Interop.Generic;
+
+public enum GENL_CTRL_CMD : ushort
+{
+    CTRL_CMD_UNSPEC,
+    CTRL_CMD_NEWFAMILY,
+    CTRL_CMD_DELFAMILY,
+    CTRL_CMD_GETFAMILY,
+    CTRL_CMD_NEWOPS,
+    CTRL_CMD_DELOPS,
+    CTRL_CMD_GETOPS,
+    CTRL_CMD_NEWMCAST_GRP,
+    CTRL_CMD_DELMCAST_GRP,
+    CTRL_CMD_GETMCAST_GRP, /* unused */
+    CTRL_CMD_GETPOLICY,
+}
