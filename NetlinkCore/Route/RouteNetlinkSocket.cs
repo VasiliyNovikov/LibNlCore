@@ -12,7 +12,7 @@ using NetNsCore;
 
 using NetworkingPrimitivesCore;
 
-namespace NetlinkCore;
+namespace NetlinkCore.Route;
 
 public sealed class RouteNetlinkSocket() : NetlinkSocket(NetlinkFamily.Route)
 {

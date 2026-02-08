@@ -5,6 +5,8 @@ using LinuxCore;
 
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
+using NetlinkCore.Route;
+
 using NetNsCore;
 
 using NetworkingPrimitivesCore;
@@ -12,7 +14,7 @@ using NetworkingPrimitivesCore;
 namespace NetlinkCore.Tests;
 
 [TestClass]
-public class NetlinkSocketTests
+public class RouteNetlinkSocketTests
 {
     [TestMethod]
     public void RouteNetlinkSocket_Create()

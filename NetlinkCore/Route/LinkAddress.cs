@@ -2,7 +2,7 @@ using System;
 using System.Net;
 using System.Net.Sockets;
 
-namespace NetlinkCore;
+namespace NetlinkCore.Route;
 
 public sealed class LinkAddress
 {

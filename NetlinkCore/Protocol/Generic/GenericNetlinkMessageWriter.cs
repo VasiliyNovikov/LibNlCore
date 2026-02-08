@@ -9,13 +9,13 @@ internal readonly ref struct GenericNetlinkMessageWriter<TAttr>(Span<byte> buffe
 {
     private readonly NetlinkMessageWriter<genlmsghdr, TAttr> _writer = new(buffer);
 
-    public NetlinkMessageWriter Writer => _writer.Writer;
+    public NetlinkMessageWriter<genlmsghdr, TAttr> Writer => _writer;
 
     public ref genlmsghdr Header => ref _writer.Header;
 
-    public int FamilyId
+    public ushort FamilyId
     {
-        get => _writer.SubType;
+        get => (ushort)_writer.SubType;
         set => _writer.SubType = value;
     }
 
