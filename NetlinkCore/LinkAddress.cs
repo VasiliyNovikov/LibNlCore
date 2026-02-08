@@ -13,7 +13,7 @@ public readonly struct LinkAddress
     public LinkAddress(IPAddress address, byte prefixLength)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(prefixLength);
-        ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(prefixLength, address.AddressFamily == AddressFamily.InterNetwork ? 32 : 128);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(prefixLength, address.AddressFamily == AddressFamily.InterNetwork ? 32 : 128);
         Address = address;
         PrefixLength = prefixLength;
     }

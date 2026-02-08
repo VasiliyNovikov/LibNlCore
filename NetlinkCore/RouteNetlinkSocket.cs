@@ -189,13 +189,22 @@ public sealed class RouteNetlinkSocket() : NetlinkSocket(NetlinkFamily.Route)
 
     #region Addresses
 
-    public LinkAddress[] GetAddresses(int linkIndex)
+    public LinkAddress[] GetAddresses(int linkIndex, AddressFamily addressFamily = AddressFamily.Unspecified)
     {
+        if (addressFamily == AddressFamily.Unspecified)
+            return [.. GetAddresses(linkIndex, AddressFamily.InterNetwork), .. GetAddresses(linkIndex, AddressFamily.InterNetworkV6)];
+
         using var buffer = new NetlinkBuffer(NetlinkBufferSize.Large);
         var writer = GetWriter<ifaddrmsg, IFA_ATTRS>(buffer);
         writer.Type = RouteNetlinkMessageType.GetAddress;
         writer.Flags = NetlinkMessageFlags.Request | NetlinkMessageFlags.Dump;
         writer.Header.ifa_index = (uint)linkIndex;
+        writer.Header.ifa_family = (byte)(addressFamily switch
+        {
+            AddressFamily.InterNetwork => LinuxAddressFamily.Inet,
+            AddressFamily.InterNetworkV6 => LinuxAddressFamily.Inet6,
+            _ => throw new ArgumentException($"Unsupported address family: {addressFamily}", nameof(addressFamily))
+        });
         var addresses = new List<LinkAddress>();
         foreach (var message in Get(buffer, writer))
             if (message.Type == RouteNetlinkMessageType.NewAddress)

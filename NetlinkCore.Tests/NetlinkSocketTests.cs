@@ -1,4 +1,5 @@
 using System.Linq;
+using System.Net;
 
 using LinuxCore;
 
@@ -190,5 +191,20 @@ public class NetlinkSocketTests
             socket.DeleteLink(peerName);
             NetNs.Delete(nsName);
         }
+    }
+
+    [TestMethod]
+    public void RouteNetlinkSocket_GetAddresses()
+    {
+        using var socket = new RouteNetlinkSocket();
+        var lo = socket.GetLink("lo");
+        var loAddresses = socket.GetAddresses(lo.Index).OrderBy(a => a.AddressFamily).ToList();
+        Assert.HasCount(2, loAddresses);
+        var ipv4 = loAddresses[0];
+        Assert.AreEqual(IPAddress.Loopback, ipv4.Address);
+        Assert.AreEqual(8, ipv4.PrefixLength);
+        var ipv6 = loAddresses[1];
+        Assert.AreEqual(IPAddress.IPv6Loopback, ipv6.Address);
+        Assert.AreEqual(128, ipv6.PrefixLength);
     }
 }
