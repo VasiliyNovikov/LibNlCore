@@ -189,21 +189,63 @@ public sealed class RouteNetlinkSocket() : NetlinkSocket(NetlinkFamily.Route)
 
     #region Addresses
 
-    public void AddAddress(int index, IPAddress address, byte prefixLength)
+    public LinkAddress[] GetAddresses(int linkIndex)
+    {
+        using var buffer = new NetlinkBuffer(NetlinkBufferSize.Large);
+        var writer = GetWriter<ifaddrmsg, IFA_ATTRS>(buffer);
+        writer.Type = RouteNetlinkMessageType.GetAddress;
+        writer.Flags = NetlinkMessageFlags.Request | NetlinkMessageFlags.Dump;
+        writer.Header.ifa_index = (uint)linkIndex;
+        var addresses = new List<LinkAddress>();
+        foreach (var message in Get(buffer, writer))
+            if (message.Type == RouteNetlinkMessageType.NewAddress)
+            {
+                var prefixLength = message.Header.ifa_prefixlen;
+                IPAddress? address = null;
+                foreach (var attribute in message.Attributes)
+                    switch (attribute.Name)
+                    {
+                        case IFA_ATTRS.IFA_ADDRESS:
+                            address = new IPAddress(attribute.Data);
+                            break;
+                    }
+                if (address is null)
+                    throw new InvalidOperationException($"Address on link with index '{linkIndex}' is missing an address attribute");
+                addresses.Add(new LinkAddress(address, prefixLength));
+            }
+        return [.. addresses];
+    }
+
+    public void AddAddress(int linkIndex, LinkAddress address)
     {
         using var buffer = new NetlinkBuffer(NetlinkBufferSize.Small);
         var writer = GetWriter<ifaddrmsg, IFA_ATTRS>(buffer);
         writer.Type = RouteNetlinkMessageType.NewAddress;
         writer.Flags = NetlinkMessageFlags.Request | NetlinkMessageFlags.Create | NetlinkMessageFlags.Exclusive | NetlinkMessageFlags.Ack;
-        writer.Header.ifa_index = (uint)index;
-        writer.Header.ifa_prefixlen = prefixLength;
+        WriteAddress(writer, linkIndex, address);
+        Post(buffer, writer);
+    }
+
+    public void DeleteAddress(int linkIndex, LinkAddress address)
+    {
+        using var buffer = new NetlinkBuffer(NetlinkBufferSize.Small);
+        var writer = GetWriter<ifaddrmsg, IFA_ATTRS>(buffer);
+        writer.Type = RouteNetlinkMessageType.DeleteAddress;
+        writer.Flags = NetlinkMessageFlags.Request | NetlinkMessageFlags.Ack;
+        WriteAddress(writer, linkIndex, address);
+        Post(buffer, writer);
+    }
+
+    private static void WriteAddress(RouteNetlinkMessageWriter<ifaddrmsg, IFA_ATTRS> writer, int linkIndex, LinkAddress address)
+    {
+        writer.Header.ifa_index = (uint)linkIndex;
+        writer.Header.ifa_prefixlen = address.PrefixLength;
         writer.Header.ifa_family = (byte)(address.AddressFamily == AddressFamily.InterNetwork ? LinuxAddressFamily.Inet : LinuxAddressFamily.Inet6);
         var size = address.AddressFamily == AddressFamily.InterNetwork ? 4 : 16;
-        var addressBytes = writer.Attributes.PrepareWrite(IFA_ATTRS.IFA_LOCAL, size);
-        address.TryWriteBytes(addressBytes, out _);
-        addressBytes = writer.Attributes.PrepareWrite(IFA_ATTRS.IFA_ADDRESS, size);
-        address.TryWriteBytes(addressBytes, out _);
-        Post(buffer, writer);
+        var localBytes = writer.Attributes.PrepareWrite(IFA_ATTRS.IFA_LOCAL, size);
+        address.Address.TryWriteBytes(localBytes, out _);
+        var addressBytes = writer.Attributes.PrepareWrite(IFA_ATTRS.IFA_ADDRESS, size);
+        localBytes.CopyTo(addressBytes);
     }
 
     #endregion
