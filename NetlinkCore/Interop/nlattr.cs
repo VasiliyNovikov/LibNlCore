@@ -1,6 +1,6 @@
 using System.Runtime.InteropServices;
 
-namespace NetlinkCore.Interop.Generic;
+namespace NetlinkCore.Interop;
 
 [StructLayout(LayoutKind.Sequential)]
 internal struct nlattr

@@ -1,7 +1,7 @@
 using System;
 using System.Runtime.CompilerServices;
 
-using NetlinkCore.Interop.Route;
+using NetlinkCore.Interop;
 
 namespace NetlinkCore.Protocol;
 
@@ -24,8 +24,8 @@ internal readonly unsafe ref struct NetlinkAttributeCollection<TAttr>(ReadOnlySp
         {
             if (_reader.IsEndOfBuffer)
                 return false;
-            ref readonly var header = ref _reader.Read<rtattr>();
-            Current = new NetlinkAttribute<TAttr>(Unsafe.BitCast<ushort, TAttr>(header.rta_type), _reader.Read(header.rta_len - sizeof(rtattr)));
+            ref readonly var header = ref _reader.Read<nlattr>();
+            Current = new NetlinkAttribute<TAttr>(Unsafe.BitCast<ushort, TAttr>(header.nla_type), _reader.Read(header.nla_len - sizeof(nlattr)));
             return true;
         }
     }
