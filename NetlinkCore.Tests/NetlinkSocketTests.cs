@@ -203,8 +203,16 @@ public class NetlinkSocketTests
         var ipv4 = loAddresses[0];
         Assert.AreEqual(IPAddress.Loopback, ipv4.Address);
         Assert.AreEqual(8, ipv4.PrefixLength);
+        Assert.IsFalse(ipv4.NoDad);
         var ipv6 = loAddresses[1];
         Assert.AreEqual(IPAddress.IPv6Loopback, ipv6.Address);
         Assert.AreEqual(128, ipv6.PrefixLength);
+        Assert.IsFalse(ipv6.NoDad);
+    }
+
+    [TestMethod]
+    public void RouteNetlinkSocket_Add_Delete_Address()
+    {
+        using var socket = new RouteNetlinkSocket();
     }
 }

@@ -1,4 +1,5 @@
 using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 
@@ -12,9 +13,9 @@ internal readonly ref struct NetlinkAttribute<TAttr>(TAttr name, ReadOnlySpan<by
 
     public T AsValue<T>() where T : unmanaged
     {
-        return Data.Length == Marshal.SizeOf<T>()
+        return Data.Length == Unsafe.SizeOf<T>()
             ? MemoryMarshal.Read<T>(Data)
-            : throw new InvalidOperationException($"Cannot convert attribute value to type {typeof(T).Name} because the size does not match.");
+            : throw new InvalidOperationException($"Cannot convert attribute value to type {typeof(T).Name} because the size does not match");
     }
 
     public unsafe string AsString()

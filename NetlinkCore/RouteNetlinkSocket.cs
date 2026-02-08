@@ -211,16 +211,20 @@ public sealed class RouteNetlinkSocket() : NetlinkSocket(NetlinkFamily.Route)
             {
                 var prefixLength = message.Header.ifa_prefixlen;
                 IPAddress? address = null;
+                ifa_flags flags = default;
                 foreach (var attribute in message.Attributes)
                     switch (attribute.Name)
                     {
                         case IFA_ATTRS.IFA_ADDRESS:
                             address = new IPAddress(attribute.Data);
                             break;
+                        case IFA_ATTRS.IFA_FLAGS:
+                            flags = attribute.AsValue<ifa_flags>();
+                            break;
                     }
                 if (address is null)
                     throw new InvalidOperationException($"Address on link with index '{linkIndex}' is missing an address attribute");
-                addresses.Add(new LinkAddress(address, prefixLength));
+                addresses.Add(new LinkAddress(address, prefixLength, (flags & ifa_flags.IFA_F_NODAD) != 0));
             }
         return [.. addresses];
     }
@@ -255,6 +259,11 @@ public sealed class RouteNetlinkSocket() : NetlinkSocket(NetlinkFamily.Route)
         address.Address.TryWriteBytes(localBytes, out _);
         var addressBytes = writer.Attributes.PrepareWrite(IFA_ATTRS.IFA_ADDRESS, size);
         localBytes.CopyTo(addressBytes);
+        if (address.NoDad)
+        {
+            writer.Header.ifa_flags |= (byte)ifa_flags.IFA_F_NODAD;
+            writer.Attributes.Write(IFA_ATTRS.IFA_FLAGS, ifa_flags.IFA_F_NODAD);
+        }
     }
 
     #endregion

@@ -1,5 +1,8 @@
+using System;
+
 namespace NetlinkCore.Interop.Route;
 
+[Flags]
 internal enum ifa_flags : uint
 {
     IFA_F_SECONDARY       = 0x001,
