@@ -5,10 +5,11 @@ using System.Runtime.InteropServices.Marshalling;
 
 namespace NetlinkCore.Protocol;
 
-internal readonly ref struct NetlinkAttribute<TAttr>(TAttr name, ReadOnlySpan<byte> data) where TAttr : unmanaged, Enum
+internal readonly ref struct NetlinkAttribute<TAttr>(TAttr name, bool nested, bool netByteOrder, ReadOnlySpan<byte> data) where TAttr : unmanaged, Enum
 {
     public TAttr Name => name;
-
+    public bool Nested => nested;
+    public bool NetByteOrder => netByteOrder;
     public ReadOnlySpan<byte> Data { get; } = data;
 
     public T AsValue<T>() where T : unmanaged

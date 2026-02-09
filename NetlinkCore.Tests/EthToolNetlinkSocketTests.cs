@@ -14,7 +14,7 @@ public class EthToolNetlinkSocketTests
         using var socket = new EthToolNetlinkSocket();
     }
     
-    //[TestMethod]
+    [TestMethod]
     public void EthToolNetlinkSocket_GetFeatures()
     {
         using var rtSocket = new RouteNetlinkSocket();

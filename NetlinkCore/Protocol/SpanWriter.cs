@@ -23,7 +23,7 @@ internal readonly unsafe ref struct SpanWriter
     public Span<byte> Skip(int length)
     {
         var slice = _buffer.Slice((int)_length, length);
-        _length += Alignment.Align((uint)length);
+        _length += (uint)Alignment.Align(length);
         return slice;
     }
 

@@ -35,7 +35,7 @@ internal readonly unsafe ref struct NetlinkAttributeWriter<TAttr>(SpanWriter wri
         where TNestedAttr : unmanaged, Enum
     {
         ref var header = ref _writer.Skip<nlattr>();
-        header.nla_type = Unsafe.BitCast<TAttr, ushort>(name);
+        header.nla_type = (ushort)(Unsafe.BitCast<TAttr, ushort>(name) | Constants.NLA_F_NESTED);
         return new NestedScope<TNestedAttr>(_writer, ref header.nla_len);
     }
 
@@ -44,7 +44,7 @@ internal readonly unsafe ref struct NetlinkAttributeWriter<TAttr>(SpanWriter wri
         where TNestedHeader : unmanaged
     {
         ref var header = ref _writer.Skip<nlattr>();
-        header.nla_type = Unsafe.BitCast<TAttr, ushort>(name);
+        header.nla_type = (ushort)(Unsafe.BitCast<TAttr, ushort>(name) | Constants.NLA_F_NESTED);
         ref var nestedHeader = ref _writer.Skip<TNestedHeader>();
         return new NestedScope<TNestedAttr, TNestedHeader>(_writer, ref header.nla_len, ref nestedHeader);
     }

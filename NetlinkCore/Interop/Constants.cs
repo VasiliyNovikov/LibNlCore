@@ -30,6 +30,10 @@ internal static class Constants
     /* Flags for ACK message */
     public const int NLM_F_CAPPED        = 0x100; /* capped request */
     public const int NLM_F_ACK_TLVS      = 0x200; /* extended ACK TLVs */
+    
+    public const ushort NLA_F_NESTED = 1 << 15;        /* Attribute payload contains nested attributes */
+    public const ushort NLA_F_NET_BYTEORDER = 1 << 14; /* Attribute payload is in network byte order */
+    public const ushort NLA_F_TYPE_MASK = unchecked((ushort)~(NLA_F_NESTED | NLA_F_NET_BYTEORDER));
 
     public const int NLMSG_NOOP    = 0x1; /* Nothing */
     public const int NLMSG_ERROR   = 0x2; /* Error */

@@ -9,7 +9,7 @@ public class EthToolNetlinkSocket() : GenericNetlinkSocket<GENL_ETHTOOL_MSG>("et
 {
     public LinkFeatures GetFeatures(int linkIndex)
     {
-        using var buffer = new NetlinkBuffer(NetlinkBufferSize.Small);
+        using var buffer = new NetlinkBuffer(NetlinkBufferSize.Large);
         var writer = GetWriter<GENL_ETHTOOL_A_FEATURES>(buffer);
         writer.Flags = NetlinkMessageFlags.Request;
         writer.Command = GENL_ETHTOOL_MSG.ETHTOOL_MSG_FEATURES_GET;
@@ -54,7 +54,7 @@ public class EthToolNetlinkSocket() : GenericNetlinkSocket<GENL_ETHTOOL_MSG>("et
                                         if (bitAttr.Name == GENL_ETHTOOL_A_BITSET_BIT.ETHTOOL_A_BITSET_BIT_NAME)
                                             featureName = bitAttr.AsString();
                                         else if (bitAttr.Name == GENL_ETHTOOL_A_BITSET_BIT.ETHTOOL_A_BITSET_BIT_VALUE)
-                                            featureValue = bitAttr.AsValue<bool>();
+                                            featureValue = true;
                                     }
                                     if (featureName != null)
                                         featureDict[featureName] = featureValue;
