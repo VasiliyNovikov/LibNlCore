@@ -3,15 +3,9 @@ using System.Buffers;
 
 namespace NetlinkCore;
 
-internal readonly struct NetlinkBuffer : IDisposable
+internal readonly struct NetlinkBuffer(NetlinkBufferSize size) : IDisposable
 {
-    private readonly byte[] _buffer;
-
-    public NetlinkBuffer(NetlinkBufferSize size)
-    {
-        _buffer = ArrayPool<byte>.Shared.Rent((int)size);
-        Array.Clear(_buffer);
-    }
+    private readonly byte[] _buffer = ArrayPool<byte>.Shared.Rent((int)size);
 
     public void Dispose() => ArrayPool<byte>.Shared.Return(_buffer);
 
