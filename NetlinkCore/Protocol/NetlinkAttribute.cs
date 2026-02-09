@@ -24,5 +24,6 @@ internal readonly ref struct NetlinkAttribute<TAttr>(TAttr name, ReadOnlySpan<by
             return Utf8StringMarshaller.ConvertToManaged(ptr)!;
     }
 
-    public NetlinkAttributeCollection<TAttr> AsNested() => new(Data);
+    public NetlinkAttributeCollection<TNestedAttr> AsNested<TNestedAttr>() where TNestedAttr : unmanaged, Enum => new(Data);
+    public NetlinkAttributeCollection<TAttr> AsNested() => AsNested<TAttr>();
 }
