@@ -1,11 +1,11 @@
 using System;
-using System.Runtime.CompilerServices;
 
 using NetlinkCore.Interop.Generic;
 
 namespace NetlinkCore.Protocol.Generic;
 
-internal readonly ref struct GenericNetlinkMessageCollection<TAttr>(NetlinkMessageCollection<genlmsghdr, TAttr> collection)
+internal readonly ref struct GenericNetlinkMessageCollection<TCmd, TAttr>(NetlinkMessageCollection<genlmsghdr, TAttr> collection)
+    where TCmd : unmanaged, Enum
     where TAttr : unmanaged, Enum
 {
     private readonly NetlinkMessageCollection<genlmsghdr, TAttr> _collection = collection;
@@ -16,7 +16,7 @@ internal readonly ref struct GenericNetlinkMessageCollection<TAttr>(NetlinkMessa
     {
         private NetlinkMessageCollection<genlmsghdr, TAttr>.Enumerator _enumerator;
 
-        public GenericNetlinkMessage<TAttr> Current { get; private set; }
+        public GenericNetlinkMessage<TCmd, TAttr> Current { get; private set; }
 
         internal Enumerator(NetlinkMessageCollection<genlmsghdr, TAttr> collection) => _enumerator = collection.GetEnumerator();
 
@@ -25,7 +25,7 @@ internal readonly ref struct GenericNetlinkMessageCollection<TAttr>(NetlinkMessa
             if (!_enumerator.MoveNext())
                 return false;
             var current = _enumerator.Current;
-            Current = new GenericNetlinkMessage<TAttr>(current.Flags, current.SubType, in current.Header, current.Attributes);
+            Current = new GenericNetlinkMessage<TCmd, TAttr>(current.Flags, current.SubType, in current.Header, current.Attributes);
             return true;
         }
     }

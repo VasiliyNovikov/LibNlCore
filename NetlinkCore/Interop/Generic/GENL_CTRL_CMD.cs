@@ -1,6 +1,6 @@
 namespace NetlinkCore.Interop.Generic;
 
-public enum GENL_CTRL_CMD : ushort
+public enum GENL_CTRL_CMD : byte
 {
     CTRL_CMD_UNSPEC,
     CTRL_CMD_NEWFAMILY,
