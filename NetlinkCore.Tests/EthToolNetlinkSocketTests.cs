@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 using NetlinkCore.Generic;
@@ -21,5 +23,41 @@ public class EthToolNetlinkSocketTests
         var lo = rtSocket.GetLink("lo");
         using var socket = new EthToolNetlinkSocket();
         var features = socket.GetFeatures(lo.Index);
+        Assert.IsNotEmpty(features);
+        Assert.IsTrue(features["loopback"]);
+    }
+
+    [TestMethod]
+    public void EthToolNetlinkSocket_SetFeatures()
+    {
+        const string name = "ethtstv1";
+        const string peer = "ethtstv2";
+        const string feature = "tx-checksum-ipv4";
+        using var rtSocket = new RouteNetlinkSocket();
+        rtSocket.CreateVEth(name, peer);
+        try
+        {
+            var link = rtSocket.GetLink(name);
+
+            using var socket = new EthToolNetlinkSocket();
+            var features = socket.GetFeatures(link.Index);
+            Assert.IsFalse(features[feature]);
+
+            var featuresToSet = new Dictionary<string, bool> { [feature] = true };
+            socket.SetFeatures(link.Index, featuresToSet);
+
+            features = socket.GetFeatures(link.Index);
+            Assert.IsTrue(features[feature]);
+
+            featuresToSet = new Dictionary<string, bool> { [feature] = false };
+            socket.SetFeatures(link.Index, featuresToSet);
+
+            features = socket.GetFeatures(link.Index);
+            Assert.IsFalse(features[feature]);
+        }
+        finally
+        {
+            rtSocket.DeleteLink(name);
+        }
     }
 }

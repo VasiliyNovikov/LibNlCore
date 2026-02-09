@@ -20,6 +20,8 @@ internal readonly unsafe ref struct NetlinkAttributeWriter<TAttr>(SpanWriter wri
         return _writer.Skip(length);
     }
 
+    public void WriteFlag(TAttr name) => PrepareWrite(name, 0);
+
     public void Write<T>(TAttr name, in T value) where T : unmanaged => MemoryMarshal.Write(PrepareWrite(name, sizeof(T)), value);
 
     public void Write(TAttr name, ReadOnlySpan<byte> value) => value.CopyTo(PrepareWrite(name, value.Length));

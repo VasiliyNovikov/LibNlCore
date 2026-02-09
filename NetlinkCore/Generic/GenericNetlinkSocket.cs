@@ -30,7 +30,7 @@ public class GenericNetlinkSocket<TCmd>(GenericNetlinkFamily family) : NetlinkSo
         return new(base.Get(buffer, message.Writer));
     }
 
-    private void Post<TAttr>(Span<byte> buffer, GenericNetlinkMessageWriter<TCmd, TAttr> message)
+    private protected void Post<TAttr>(Span<byte> buffer, GenericNetlinkMessageWriter<TCmd, TAttr> message)
         where TAttr : unmanaged, Enum
     {
         base.Post(buffer, message.Writer);
