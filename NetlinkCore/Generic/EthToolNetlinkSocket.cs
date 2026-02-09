@@ -94,10 +94,13 @@ public class EthToolNetlinkSocket() : GenericNetlinkSocket<GENL_ETHTOOL_MSG>("et
         }
         Post(buffer, writer);
     }
-    
+
     internal sealed class FeaturesResponse
     {
-        
+        public FeatureBitSet? Supported { get; set; }
+        public FeatureBitSet? Active { get; set; }
+        public FeatureBitSet? Wanted { get; set; }
+        public FeatureBitSet? NoChange { get; set; }
     }
 
     internal sealed class FeatureBitSet
