@@ -4,7 +4,7 @@ using NetlinkCore.Interop.Generic;
 
 namespace NetlinkCore.Generic;
 
-public class ControlNetlinkSocket() : GenericNetlinkSocket<GENL_CTRL_CMD>(Family)
+public sealed class ControlNetlinkSocket() : GenericNetlinkSocket<GENL_CTRL_CMD>(Family)
 {
     private const ushort FamilyId = 0x10; // GENL_ID_CTRL
     private const byte FamilyVersion = 1;

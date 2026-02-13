@@ -4,6 +4,7 @@ using System.Text.Json;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 using NetlinkCore.Generic;
+using NetlinkCore.Interop.Generic;
 using NetlinkCore.Route;
 
 namespace NetlinkCore.Tests;
@@ -17,6 +18,15 @@ public class EthToolNetlinkSocketTests
     public void EthToolNetlinkSocket_Create()
     {
         using var socket = new EthToolNetlinkSocket();
+    }
+
+    [TestMethod]
+    public void EthToolNetlinkSocket_GetStringSet()
+    {
+        using var socket = new EthToolNetlinkSocket();
+        var featureStrings = socket.GetStringSet(ethtool_stringset.ETH_SS_FEATURES);
+        Assert.IsNotEmpty(featureStrings);
+        Assert.IsTrue(featureStrings.Contains("tx-checksum-ipv4"));
     }
 
     [TestMethod]
