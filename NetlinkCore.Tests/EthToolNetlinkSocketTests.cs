@@ -1,5 +1,6 @@
+using System;
 using System.Collections.Generic;
-
+using System.Text.Json;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 using NetlinkCore.Generic;
@@ -10,12 +11,24 @@ namespace NetlinkCore.Tests;
 [TestClass]
 public class EthToolNetlinkSocketTests
 {
+    private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
+
     [TestMethod]
     public void EthToolNetlinkSocket_Create()
     {
         using var socket = new EthToolNetlinkSocket();
     }
-    
+
+    [TestMethod]
+    public void EthToolNetlinkSocket_GetFeaturesRaw()
+    {
+        using var rtSocket = new RouteNetlinkSocket();
+        var lo = rtSocket.GetLink("eth0");
+        using var socket = new EthToolNetlinkSocket();
+        var features = socket.GetFeaturesRaw(lo.Index);
+        Console.Error.WriteLine(JsonSerializer.Serialize(features, JsonOptions));
+    }
+
     [TestMethod]
     public void EthToolNetlinkSocket_GetFeatures()
     {

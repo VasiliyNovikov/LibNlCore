@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
-
+using System.Text.Json.Serialization;
 using NetlinkCore.Interop.Generic;
 
 namespace NetlinkCore.Generic;
@@ -9,6 +8,11 @@ namespace NetlinkCore.Generic;
 public class EthToolNetlinkSocket() : GenericNetlinkSocket<GENL_ETHTOOL_MSG>("ethtool")
 {
     public Dictionary<string, bool> GetFeatures(int linkIndex)
+    {
+        throw new NotImplementedException();
+    }
+
+    internal FeaturesResponse GetFeaturesRaw(int linkIndex)
     {
         using var buffer = new NetlinkBuffer(NetlinkBufferSize.Large);
         var writer = GetWriter<GENL_ETHTOOL_A_FEATURES>(buffer);
@@ -19,53 +23,62 @@ public class EthToolNetlinkSocket() : GenericNetlinkSocket<GENL_ETHTOOL_MSG>("et
         foreach (var message in Get(buffer, writer))
             if (message.Command == GENL_ETHTOOL_MSG.ETHTOOL_MSG_FEATURES_GET)
             {
-                var features = new Dictionary<string, bool>();
+                var features = new FeaturesResponse();
                 foreach (var attr in message.Attributes)
-                    if (attr.Name is GENL_ETHTOOL_A_FEATURES.ETHTOOL_A_FEATURES_HW or GENL_ETHTOOL_A_FEATURES.ETHTOOL_A_FEATURES_ACTIVE)
-                        foreach (var bitsetAttr in attr.AsNested<GENL_ETHTOOL_A_BITSET>())
+                    if (attr.Name is GENL_ETHTOOL_A_FEATURES.ETHTOOL_A_FEATURES_HW or
+                                     GENL_ETHTOOL_A_FEATURES.ETHTOOL_A_FEATURES_ACTIVE or
+                                     GENL_ETHTOOL_A_FEATURES.ETHTOOL_A_FEATURES_WANTED or
+                                     GENL_ETHTOOL_A_FEATURES.ETHTOOL_A_FEATURES_NOCHANGE)
+                    {
+                        var bitSet = attr.Name switch
                         {
-                            var noMask = false;
-                            uint size = 0;
-                            ulong value = 0;
-                            ulong mask = 0;
-                            if (bitsetAttr.Name == GENL_ETHTOOL_A_BITSET.ETHTOOL_A_BITSET_BITS)
+                            GENL_ETHTOOL_A_FEATURES.ETHTOOL_A_FEATURES_HW => features.Supported ??= new(),
+                            GENL_ETHTOOL_A_FEATURES.ETHTOOL_A_FEATURES_ACTIVE => features.Active ??= new(),
+                            GENL_ETHTOOL_A_FEATURES.ETHTOOL_A_FEATURES_WANTED => features.Wanted ??= new(),
+                            GENL_ETHTOOL_A_FEATURES.ETHTOOL_A_FEATURES_NOCHANGE => features.NoChange ??= new(),
+                            _ => throw new InvalidOperationException()
+                        };
+                        foreach (var bitsetAttr in attr.AsNested<GENL_ETHTOOL_A_BITSET>())
+                            switch (bitsetAttr.Name)
                             {
-                                foreach (var bitsAttr in bitsetAttr.AsNested<GENL_ETHTOOL_A_BITSET_BITS_BIT>())
-                                    if (bitsAttr.Name == GENL_ETHTOOL_A_BITSET_BITS_BIT.ETHTOOL_A_BITSET_BITS_BIT)
-                                    {
-                                        string? featureName = null;
-                                        var featureValue = false;
-                                        foreach (var bitAttr in bitsAttr.AsNested<GENL_ETHTOOL_A_BITSET_BIT>())
-                                            switch (bitAttr.Name)
-                                            {
-                                                case GENL_ETHTOOL_A_BITSET_BIT.ETHTOOL_A_BITSET_BIT_NAME:
-                                                    featureName = bitAttr.AsString();
-                                                    break;
-                                                case GENL_ETHTOOL_A_BITSET_BIT.ETHTOOL_A_BITSET_BIT_VALUE:
-                                                    featureValue = true;
-                                                    break;
-                                            }
-
-                                        if (featureName != null)
-                                            CollectionsMarshal.GetValueRefOrAddDefault(features, featureName, out _) |=
-                                                featureValue;
-                                    }
+                                case GENL_ETHTOOL_A_BITSET.ETHTOOL_A_BITSET_BITS:
+                                {
+                                    var bits = bitSet.Bits ??= [];
+                                    foreach (var bitsAttr in bitsetAttr.AsNested<GENL_ETHTOOL_A_BITSET_BITS_BIT>())
+                                        if (bitsAttr.Name == GENL_ETHTOOL_A_BITSET_BITS_BIT.ETHTOOL_A_BITSET_BITS_BIT)
+                                        {
+                                            var bit = new FeatureBit();
+                                            bits.Add(bit);
+                                            foreach (var bitAttr in bitsAttr.AsNested<GENL_ETHTOOL_A_BITSET_BIT>())
+                                                switch (bitAttr.Name)
+                                                {
+                                                    case GENL_ETHTOOL_A_BITSET_BIT.ETHTOOL_A_BITSET_BIT_INDEX:
+                                                        bit.Index = bitAttr.AsValue<int>();
+                                                        break;
+                                                    case GENL_ETHTOOL_A_BITSET_BIT.ETHTOOL_A_BITSET_BIT_NAME:
+                                                        bit.Name = bitAttr.AsString();
+                                                        break;
+                                                    case GENL_ETHTOOL_A_BITSET_BIT.ETHTOOL_A_BITSET_BIT_VALUE:
+                                                        bit.Value = true;
+                                                        break;
+                                                }
+                                        }
+                                    break;
+                                }
+                                case GENL_ETHTOOL_A_BITSET.ETHTOOL_A_BITSET_NOMASK:
+                                    bitSet.NoMask = true;
+                                    break;
+                                case GENL_ETHTOOL_A_BITSET.ETHTOOL_A_BITSET_SIZE:
+                                    bitSet.Size = bitsetAttr.AsValue<uint>();
+                                    break;
+                                case GENL_ETHTOOL_A_BITSET.ETHTOOL_A_BITSET_MASK:
+                                    bitSet.Mask = bitsetAttr.AsValue<ulong>();
+                                    break;
+                                case GENL_ETHTOOL_A_BITSET.ETHTOOL_A_BITSET_VALUE:
+                                    bitSet.Value = bitsetAttr.AsValue<ulong>();
+                                    break;
                             }
-                            else if (bitsetAttr.Name == GENL_ETHTOOL_A_BITSET.ETHTOOL_A_BITSET_NOMASK)
-                                noMask = true;
-                            else if (bitsetAttr.Name == GENL_ETHTOOL_A_BITSET.ETHTOOL_A_BITSET_SIZE)
-                                size = bitsetAttr.AsValue<uint>();
-                            else if (bitsetAttr.Name == GENL_ETHTOOL_A_BITSET.ETHTOOL_A_BITSET_MASK)
-                                mask = bitsetAttr.AsValue<ulong>();
-                            else if (bitsetAttr.Name == GENL_ETHTOOL_A_BITSET.ETHTOOL_A_BITSET_VALUE)
-                                value = bitsetAttr.AsValue<ulong>();
-
-                            if (!noMask)
-                            {
-                                
-                                throw new InvalidOperationException("Expected bitset with no mask");
-                            }
-                        }
+                    }
                 return features;
             }
         throw new InvalidOperationException("Did not receive features response");
@@ -97,25 +110,37 @@ public class EthToolNetlinkSocket() : GenericNetlinkSocket<GENL_ETHTOOL_MSG>("et
 
     internal sealed class FeaturesResponse
     {
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public FeatureBitSet? Supported { get; set; }
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public FeatureBitSet? Active { get; set; }
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public FeatureBitSet? Wanted { get; set; }
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public FeatureBitSet? NoChange { get; set; }
     }
 
     internal sealed class FeatureBitSet
     {
-            public bool NoMask { get; set; }
-            public uint Size { get; set; }
-            public ulong Value { get; set; }
-            public ulong Mask { get; set; }
-            public List<FeatureBit>? Bits { get; set; }
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public bool? NoMask { get; set; }
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public uint? Size { get; set; }
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public ulong? Value { get; set; }
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public ulong? Mask { get; set; }
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public List<FeatureBit>? Bits { get; set; }
     }
 
     internal sealed class FeatureBit
     {
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string? Name { get; set; }
-        public int Index { get; set; }
-        public bool Value { get; set; }
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public int? Index { get; set; }
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public bool? Value { get; set; }
     }
 }
