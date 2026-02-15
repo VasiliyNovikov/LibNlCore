@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Text.Json;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 using NetlinkCore.Generic;
@@ -12,8 +9,6 @@ namespace NetlinkCore.Tests;
 [TestClass]
 public class EthToolNetlinkSocketTests
 {
-    private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
-
     [TestMethod]
     public void EthToolNetlinkSocket_Create()
     {
@@ -30,13 +25,13 @@ public class EthToolNetlinkSocketTests
     }
 
     [TestMethod]
-    public void EthToolNetlinkSocket_GetFeaturesRaw()
+    public void EthToolNetlinkSocket_FeatureIndices()
     {
-        using var rtSocket = new RouteNetlinkSocket();
-        var lo = rtSocket.GetLink("eth0");
         using var socket = new EthToolNetlinkSocket();
-        var features = socket.GetFeaturesRaw(lo.Index);
-        Console.Error.WriteLine(JsonSerializer.Serialize(features, JsonOptions));
+        var featureStrings = socket.GetStringSet(ethtool_stringset.ETH_SS_FEATURES);
+        Assert.AreEqual(EthernetFeature.TxScatterGather, (EthernetFeature)featureStrings["tx-scatter-gather"]);
+        Assert.AreEqual(EthernetFeature.TxUdpSegmentation, (EthernetFeature)featureStrings["tx-udp-segmentation"]);
+        Assert.AreEqual(EthernetFeature.HsrDupOffload, (EthernetFeature)featureStrings["hsr-dup-offload"]);
     }
 
     [TestMethod]
@@ -46,8 +41,7 @@ public class EthToolNetlinkSocketTests
         var lo = rtSocket.GetLink("lo");
         using var socket = new EthToolNetlinkSocket();
         var features = socket.GetFeatures(lo.Index);
-        Assert.IsNotEmpty(features);
-        Assert.IsTrue(features["loopback"]);
+        Assert.IsTrue(features[EthernetFeature.Loopback]);
     }
 
     [TestMethod]
@@ -55,7 +49,9 @@ public class EthToolNetlinkSocketTests
     {
         const string name = "ethtstv1";
         const string peer = "ethtstv2";
-        const string feature = "tx-checksum-ipv4";
+        const EthernetFeature feature = EthernetFeature.TxTcpSegmentation;
+        const bool defaultValue = true;
+
         using var rtSocket = new RouteNetlinkSocket();
         rtSocket.CreateVEth(name, peer);
         try
@@ -64,19 +60,19 @@ public class EthToolNetlinkSocketTests
 
             using var socket = new EthToolNetlinkSocket();
             var features = socket.GetFeatures(link.Index);
-            Assert.IsFalse(features[feature]);
+            Assert.AreEqual(defaultValue, features[feature]);
 
-            var featuresToSet = new Dictionary<string, bool> { [feature] = true };
-            socket.SetFeatures(link.Index, featuresToSet);
-
-            features = socket.GetFeatures(link.Index);
-            Assert.IsTrue(features[feature]);
-
-            featuresToSet = new Dictionary<string, bool> { [feature] = false };
-            socket.SetFeatures(link.Index, featuresToSet);
+            var featuresToSet = new EthernetFeatures(features) { [feature] = !defaultValue };
+            socket.SetFeatures(link.Index, features, featuresToSet);
 
             features = socket.GetFeatures(link.Index);
-            Assert.IsFalse(features[feature]);
+            Assert.AreNotEqual(defaultValue, features[feature]);
+
+            featuresToSet = new EthernetFeatures(features) { [feature] = defaultValue };
+            socket.SetFeatures(link.Index, features, featuresToSet);
+
+            features = socket.GetFeatures(link.Index);
+            Assert.AreEqual(defaultValue, features[feature]);
         }
         finally
         {
