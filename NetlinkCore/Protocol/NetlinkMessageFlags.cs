@@ -5,7 +5,7 @@ namespace NetlinkCore.Protocol;
 
 [SuppressMessage("Design", "CA1069:Enums values should not be duplicated")]
 [Flags]
-internal enum NetlinkMessageFlags
+internal enum NetlinkMessageFlags : ushort
 {
     None = 0,
     Request          = 0x001, // NLM_F_REQUEST       - It is request message

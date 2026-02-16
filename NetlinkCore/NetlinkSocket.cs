@@ -3,7 +3,6 @@ using System.Net.Sockets;
 
 using LinuxCore;
 
-using NetlinkCore.Interop;
 using NetlinkCore.Protocol;
 
 namespace NetlinkCore;
@@ -17,17 +16,11 @@ public abstract class NetlinkSocket : LinuxSocketBase
         SetOption(NetlinkSocketOption.CapAck, 1);
         SetOption(NetlinkSocketOption.ExtAck, 1);
         SetOption(NetlinkSocketOption.GetStrictChk, 1);
-        var address = new sockaddr_nl
-        {
-            nl_family = (ushort)LinuxAddressFamily.Netlink,
-            nl_pad = 0,
-            nl_pid = 0,
-            nl_groups = 0
-        };
+        var address = new NetlinkSocketAddress { Family = (ushort)LinuxAddressFamily.Netlink };
         Bind(address);
         Connect(address);
         GetAddress(out address);
-        PortId = address.nl_pid;
+        PortId = address.PortId;
     }
 
     private void SetOption(NetlinkSocketOption option, int value) => base.SetOption(LinuxSocketOptionLevel.Netlink, (int)option, value);

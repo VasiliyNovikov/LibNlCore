@@ -2,27 +2,25 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-using NetlinkCore.Interop;
-
 namespace NetlinkCore.Protocol;
 
 internal readonly ref struct NetlinkMessageWriter
 {
-    private readonly ref nlmsghdr _header;
+    private readonly ref NetlinkMessageHeader _header;
 
     public int SubType
     {
-        get => (int)((NetlinkMessageType)_header.nlmsg_type & ~NetlinkMessageType.Mask);
-        set => _header.nlmsg_type = (ushort)((NetlinkMessageType)value | ((NetlinkMessageType)_header.nlmsg_type & NetlinkMessageType.Mask));
+        get => (int)((NetlinkMessageType)_header.Type & ~NetlinkMessageType.Mask);
+        set => _header.Type = (ushort)((NetlinkMessageType)value | ((NetlinkMessageType)_header.Type & NetlinkMessageType.Mask));
     }
 
     public NetlinkMessageFlags Flags
     {
-        get => (NetlinkMessageFlags)_header.nlmsg_flags;
-        set => _header.nlmsg_flags = (ushort)value;
+        get => _header.Flags;
+        set => _header.Flags = value;
     }
 
-    public ref uint PortId => ref _header.nlmsg_pid;
+    public ref uint PortId => ref _header.PortId;
 
     public SpanWriter PayloadWriter { get; }
 
@@ -30,10 +28,10 @@ internal readonly ref struct NetlinkMessageWriter
 
     public NetlinkMessageWriter(Span<byte> buffer)
     {
-        _header = ref Unsafe.As<byte, nlmsghdr>(ref MemoryMarshal.GetReference(buffer));
+        _header = ref Unsafe.As<byte, NetlinkMessageHeader>(ref MemoryMarshal.GetReference(buffer));
         _header = default;
-        PayloadWriter = new SpanWriter(buffer, ref _header.nlmsg_len);
-        PayloadWriter.Skip<nlmsghdr>();
+        PayloadWriter = new SpanWriter(buffer, ref _header.Length);
+        PayloadWriter.Skip<NetlinkMessageHeader>();
     }
 }
 

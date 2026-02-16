@@ -22,12 +22,12 @@ internal readonly unsafe ref struct NetlinkMessageCollection(NetlinkSocket socke
             if (_reader.IsEndOfBuffer)
                 _reader = new SpanReader(_buffer[..socket.Receive(_buffer)]);
 
-            ref readonly var header = ref _reader.Read<nlmsghdr>();
-            var rawType = (NetlinkMessageType)header.nlmsg_type;
+            ref readonly var header = ref _reader.Read<NetlinkMessageHeader>();
+            var rawType = (NetlinkMessageType)header.Type;
             var type = rawType & NetlinkMessageType.Mask;
             var subtype = (int)rawType;
-            var flags = (NetlinkMessageFlags)header.nlmsg_flags;
-            var payload = _reader.Read((int)header.nlmsg_len - sizeof(nlmsghdr));
+            var flags = header.Flags;
+            var payload = _reader.Read((int)header.Length - sizeof(NetlinkMessageHeader));
 
             if (type == NetlinkMessageType.Error)
             {
