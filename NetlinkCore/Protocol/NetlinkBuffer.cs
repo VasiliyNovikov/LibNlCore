@@ -1,7 +1,7 @@
 using System;
 using System.Buffers;
 
-namespace NetlinkCore;
+namespace NetlinkCore.Protocol;
 
 internal readonly struct NetlinkBuffer(NetlinkBufferSize size) : IDisposable
 {

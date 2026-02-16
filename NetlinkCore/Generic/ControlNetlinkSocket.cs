@@ -1,6 +1,7 @@
 using System;
 
 using NetlinkCore.Interop.Generic;
+using NetlinkCore.Protocol;
 
 namespace NetlinkCore.Generic;
 

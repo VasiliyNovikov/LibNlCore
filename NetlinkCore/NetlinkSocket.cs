@@ -14,9 +14,9 @@ public abstract class NetlinkSocket : LinuxSocketBase
 
     protected NetlinkSocket(NetlinkFamily family) : base(LinuxAddressFamily.Netlink, LinuxSocketType.Raw, (ProtocolType)family)
     {
-        SetOption(Constants.NETLINK_CAP_ACK, 1);
-        SetOption(Constants.NETLINK_EXT_ACK, 1);
-        SetOption(Constants.NETLINK_GET_STRICT_CHK, 1);
+        SetOption(NetlinkSocketOption.CapAck, 1);
+        SetOption(NetlinkSocketOption.ExtAck, 1);
+        SetOption(NetlinkSocketOption.GetStrictChk, 1);
         var address = new sockaddr_nl
         {
             nl_family = (ushort)LinuxAddressFamily.Netlink,
@@ -30,7 +30,7 @@ public abstract class NetlinkSocket : LinuxSocketBase
         PortId = address.nl_pid;
     }
 
-    private void SetOption(int option, int value) => base.SetOption(LinuxSocketOptionLevel.Netlink, option, value);
+    private void SetOption(NetlinkSocketOption option, int value) => base.SetOption(LinuxSocketOptionLevel.Netlink, (int)option, value);
 
     private protected NetlinkMessageCollection<THeader, TAttr> Get<THeader, TAttr>(Span<byte> buffer, NetlinkMessageWriter<THeader, TAttr> message)
         where THeader : unmanaged

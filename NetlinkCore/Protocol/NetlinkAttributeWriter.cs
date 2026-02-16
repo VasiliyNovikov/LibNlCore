@@ -3,8 +3,6 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 
-using NetlinkCore.Interop;
-
 namespace NetlinkCore.Protocol;
 
 internal readonly unsafe ref struct NetlinkAttributeWriter<TAttr>(SpanWriter writer)
@@ -14,9 +12,11 @@ internal readonly unsafe ref struct NetlinkAttributeWriter<TAttr>(SpanWriter wri
 
     public Span<byte> PrepareWrite(TAttr name, int length)
     {
-        ref var header = ref _writer.Skip<nlattr>();
-        header.nla_type = Unsafe.BitCast<TAttr, ushort>(name);
-        header.nla_len = (ushort)(length + Unsafe.SizeOf<nlattr>());
+        ref var header = ref _writer.Skip<NetlinkAttributeHeader<TAttr>>();
+        header.Name = name;
+        header.IsNested = false;
+        header.IsNetworkByteOrder = false;
+        header.Length = (ushort)(length + Unsafe.SizeOf<NetlinkAttributeHeader<TAttr>>());
         return _writer.Skip(length);
     }
 
@@ -36,19 +36,23 @@ internal readonly unsafe ref struct NetlinkAttributeWriter<TAttr>(SpanWriter wri
     public NestedScope<TNestedAttr> WriteNested<TNestedAttr>(TAttr name)
         where TNestedAttr : unmanaged, Enum
     {
-        ref var header = ref _writer.Skip<nlattr>();
-        header.nla_type = (ushort)(Unsafe.BitCast<TAttr, ushort>(name) | Constants.NLA_F_NESTED);
-        return new NestedScope<TNestedAttr>(_writer, ref header.nla_len);
+        ref var header = ref _writer.Skip<NetlinkAttributeHeader<TAttr>>();
+        header.Name = name;
+        header.IsNested = true;
+        header.IsNetworkByteOrder = false;
+        return new NestedScope<TNestedAttr>(_writer, ref header.Length);
     }
 
     public NestedScope<TNestedAttr, TNestedHeader> WriteNested<TNestedAttr, TNestedHeader>(TAttr name)
         where TNestedAttr : unmanaged, Enum
         where TNestedHeader : unmanaged
     {
-        ref var header = ref _writer.Skip<nlattr>();
-        header.nla_type = (ushort)(Unsafe.BitCast<TAttr, ushort>(name) | Constants.NLA_F_NESTED);
+        ref var header = ref _writer.Skip<NetlinkAttributeHeader<TAttr>>();
+        header.Name = name;
+        header.IsNested = true;
+        header.IsNetworkByteOrder = false;
         ref var nestedHeader = ref _writer.Skip<TNestedHeader>();
-        return new NestedScope<TNestedAttr, TNestedHeader>(_writer, ref header.nla_len, ref nestedHeader);
+        return new NestedScope<TNestedAttr, TNestedHeader>(_writer, ref header.Length, ref nestedHeader);
     }
 
     public readonly ref struct NestedScope<TNestedAttr> : IDisposable
@@ -68,7 +72,7 @@ internal readonly unsafe ref struct NetlinkAttributeWriter<TAttr>(SpanWriter wri
             Writer = new NetlinkAttributeWriter<TNestedAttr>(writer);
         }
 
-        public void Dispose() => _length = (ushort)(_writerLength - _writerStart + sizeof(nlattr));
+        public void Dispose() => _length = (ushort)(_writerLength - _writerStart + sizeof(NetlinkAttributeHeader<TAttr>));
     }
 
     public readonly ref struct NestedScope<TNestedAttr, TNestedHeader> : IDisposable
@@ -93,6 +97,6 @@ internal readonly unsafe ref struct NetlinkAttributeWriter<TAttr>(SpanWriter wri
             Writer = new NetlinkAttributeWriter<TNestedAttr>(writer);
         }
 
-        public void Dispose() => _length = (ushort)(_writerLength - _writerStart + sizeof(nlattr) + sizeof(TNestedHeader));
+        public void Dispose() => _length = (ushort)(_writerLength - _writerStart + sizeof(NetlinkAttributeHeader<TAttr>) + sizeof(TNestedHeader));
     }
 }

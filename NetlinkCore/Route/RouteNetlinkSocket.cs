@@ -6,6 +6,7 @@ using System.Net.Sockets;
 using LinuxCore;
 
 using NetlinkCore.Interop.Route;
+using NetlinkCore.Protocol;
 using NetlinkCore.Protocol.Route;
 
 using NetNsCore;

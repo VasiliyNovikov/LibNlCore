@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 
 using NetlinkCore.Interop.Generic;
+using NetlinkCore.Protocol;
 
 namespace NetlinkCore.Generic.EthTool;
 

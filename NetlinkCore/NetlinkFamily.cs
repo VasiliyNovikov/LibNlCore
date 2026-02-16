@@ -1,9 +1,7 @@
-using NetlinkCore.Interop;
-
 namespace NetlinkCore;
 
 public enum NetlinkFamily
 {
-    Route = Constants.NETLINK_ROUTE,
-    Generic = Constants.NETLINK_GENERIC
+    Route   =  0, // NETLINK_ROUTE
+    Generic = 16, // NETLINK_GENERIC
 }
