@@ -24,7 +24,7 @@ internal readonly ref struct RouteNetlinkMessageCollection<THeader, TAttr>(Netli
             if (!_enumerator.MoveNext())
                 return false;
             var current = _enumerator.Current;
-            Current = new RouteNetlinkMessage<THeader, TAttr>(current.Flags, Unsafe.BitCast<int, RouteNetlinkMessageType>(current.SubType), in current.Header, current.Attributes);
+            Current = new RouteNetlinkMessage<THeader, TAttr>(Unsafe.BitCast<ushort, RouteNetlinkMessageType>(current.Type), in current.Header, current.Attributes);
             return true;
         }
     }

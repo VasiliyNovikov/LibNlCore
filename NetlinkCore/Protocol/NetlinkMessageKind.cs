@@ -3,7 +3,7 @@ using System;
 namespace NetlinkCore.Protocol;
 
 [Flags]
-public enum NetlinkMessageType
+public enum NetlinkMessageKind : ushort
 {
     None,
     NoOp    = 0x1, // NLMSG_NOOP    - Nothing

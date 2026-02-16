@@ -25,7 +25,7 @@ internal readonly ref struct GenericNetlinkMessageCollection<TCmd, TAttr>(Netlin
             if (!_enumerator.MoveNext())
                 return false;
             var current = _enumerator.Current;
-            Current = new GenericNetlinkMessage<TCmd, TAttr>(current.Flags, current.SubType, in current.Header, current.Attributes);
+            Current = new GenericNetlinkMessage<TCmd, TAttr>(in current.Header, current.Attributes);
             return true;
         }
     }

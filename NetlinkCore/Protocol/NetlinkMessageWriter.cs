@@ -8,18 +8,8 @@ internal readonly ref struct NetlinkMessageWriter
 {
     private readonly ref NetlinkMessageHeader _header;
 
-    public int SubType
-    {
-        get => (int)((NetlinkMessageType)_header.Type & ~NetlinkMessageType.Mask);
-        set => _header.Type = (ushort)((NetlinkMessageType)value | ((NetlinkMessageType)_header.Type & NetlinkMessageType.Mask));
-    }
-
-    public NetlinkMessageFlags Flags
-    {
-        get => _header.Flags;
-        set => _header.Flags = value;
-    }
-
+    public ref ushort Type => ref _header.Type;
+    public ref NetlinkMessageFlags Flags => ref _header.Flags;
     public ref uint PortId => ref _header.PortId;
 
     public SpanWriter PayloadWriter { get; }
@@ -45,19 +35,8 @@ internal readonly ref struct NetlinkMessageWriter<THeader, TAttr>
     public NetlinkMessageWriter Writer => _writer;
 
     public ref THeader Header => ref _header;
-
-    public int SubType
-    {
-        get => _writer.SubType;
-        set => _writer.SubType = value;
-    }
-
-    public NetlinkMessageFlags Flags
-    {
-        get => _writer.Flags;
-        set => _writer.Flags = value;
-    }
-
+    public ref ushort Type => ref _writer.Type;
+    public ref NetlinkMessageFlags Flags => ref _writer.Flags;
     public ref uint PortId => ref _writer.PortId;
 
     public NetlinkAttributeWriter<TAttr> Attributes { get; }

@@ -12,19 +12,8 @@ internal readonly ref struct RouteNetlinkMessageWriter<THeader, TAttr>(Span<byte
     public NetlinkMessageWriter<THeader, TAttr> Writer => _writer;
 
     public ref THeader Header => ref _writer.Header;
-
-    public RouteNetlinkMessageType Type
-    {
-        get => Unsafe.BitCast<int, RouteNetlinkMessageType>(_writer.SubType);
-        set => _writer.SubType = Unsafe.BitCast<RouteNetlinkMessageType, int>(value);
-    }
-
-    public NetlinkMessageFlags Flags
-    {
-        get => _writer.Flags;
-        set => _writer.Flags = value;
-    }
-
+    public ref RouteNetlinkMessageType Type => ref Unsafe.As<ushort, RouteNetlinkMessageType>(ref _writer.Type);
+    public ref NetlinkMessageFlags Flags => ref _writer.Flags;
     public ref uint PortId => ref _writer.PortId;
 
     public NetlinkAttributeWriter<TAttr> Attributes => _writer.Attributes;

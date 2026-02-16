@@ -11,4 +11,6 @@ internal struct NetlinkMessageHeader
     public NetlinkMessageFlags Flags; // nlmsg_flags - Flags - request or dump
     public uint SequenceNumber;       // nlmsg_seq   - Sequence number
     public uint PortId;               // nlmsg_pid   - Port ID, set to 0
+
+    public readonly NetlinkMessageKind Kind => (NetlinkMessageKind)Type & NetlinkMessageKind.Mask;
 }

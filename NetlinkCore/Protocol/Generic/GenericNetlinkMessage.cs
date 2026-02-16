@@ -11,17 +11,12 @@ internal readonly ref struct GenericNetlinkMessage<TCmd, TAttr>
 {
     private readonly ref readonly genlmsghdr _header;
 
-    public NetlinkMessageFlags Flags { get; }
-    public int FamilyId { get; }
     public TCmd Command => Unsafe.BitCast<byte, TCmd>(_header.cmd);
-    public byte Version => _header.version;
     public NetlinkAttributeCollection<TAttr> Attributes { get; }
 
-    public GenericNetlinkMessage(NetlinkMessageFlags flags, int familyId, in genlmsghdr header, NetlinkAttributeCollection<TAttr> attributes)
+    public GenericNetlinkMessage(in genlmsghdr header, NetlinkAttributeCollection<TAttr> attributes)
     {
         _header = ref header;
-        Flags = flags;
-        FamilyId = familyId;
         Attributes = attributes;
     }
 }

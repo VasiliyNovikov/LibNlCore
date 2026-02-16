@@ -23,13 +23,11 @@ internal readonly unsafe ref struct NetlinkMessageCollection(NetlinkSocket socke
                 _reader = new SpanReader(_buffer[..socket.Receive(_buffer)]);
 
             ref readonly var header = ref _reader.Read<NetlinkMessageHeader>();
-            var rawType = (NetlinkMessageType)header.Type;
-            var type = rawType & NetlinkMessageType.Mask;
-            var subtype = (int)rawType;
-            var flags = header.Flags;
+            var kind = header.Kind;
+            var type = header.Type;
             var payload = _reader.Read((int)header.Length - sizeof(NetlinkMessageHeader));
 
-            if (type == NetlinkMessageType.Error)
+            if (kind == NetlinkMessageKind.Error)
             {
                 var errorReader = new SpanReader(payload);
                 var error = errorReader.Read<nlmsgerr>().error;
@@ -47,10 +45,10 @@ internal readonly unsafe ref struct NetlinkMessageCollection(NetlinkSocket socke
                 throw new NetlinkException(error, message);
             }
 
-            if (type == NetlinkMessageType.Done)
+            if (kind == NetlinkMessageKind.Done)
                 return false;
 
-            Current = new(type, subtype, flags, payload);
+            Current = new(type, payload);
             return true;
         }
     }
@@ -80,7 +78,7 @@ internal readonly ref struct NetlinkMessageCollection<THeader, TAttr>(NetlinkSoc
             var reader = new SpanReader(current.Payload);
             ref readonly var header = ref reader.Read<THeader>();
             var attributes = new NetlinkAttributeCollection<TAttr>(reader.ReadToEnd());
-            Current = new NetlinkMessage<THeader, TAttr>(current.Flags, current.SubType, in header, attributes);
+            Current = new NetlinkMessage<THeader, TAttr>(current.Type, in header, attributes);
             return true;
         }
     }

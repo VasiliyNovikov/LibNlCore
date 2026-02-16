@@ -3,7 +3,7 @@ using System.Diagnostics.CodeAnalysis;
 namespace NetlinkCore.Protocol.Route;
 
 [SuppressMessage("Style", "IDE0055:Fix formatting")]
-public enum RouteNetlinkMessageType
+public enum RouteNetlinkMessageType : ushort
 {
     NewLink       = 16, // RTM_NEWLINK
     DeleteLink    = 17, // RTM_DELLINK
