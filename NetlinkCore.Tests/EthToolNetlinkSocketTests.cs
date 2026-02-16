@@ -1,6 +1,6 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-using NetlinkCore.Generic;
+using NetlinkCore.Generic.EthTool;
 using NetlinkCore.Interop.Generic;
 using NetlinkCore.Route;
 
@@ -21,7 +21,7 @@ public class EthToolNetlinkSocketTests
         using var socket = new EthToolNetlinkSocket();
         var featureStrings = socket.GetStringSet(ethtool_stringset.ETH_SS_FEATURES);
         Assert.IsNotEmpty(featureStrings);
-        Assert.IsTrue(featureStrings.Contains("tx-checksum-ipv4"));
+        Assert.IsTrue(featureStrings.ContainsValue("tx-checksum-ipv4"));
     }
 
     [TestMethod]
@@ -29,9 +29,9 @@ public class EthToolNetlinkSocketTests
     {
         using var socket = new EthToolNetlinkSocket();
         var featureStrings = socket.GetStringSet(ethtool_stringset.ETH_SS_FEATURES);
-        Assert.AreEqual(EthernetFeature.TxScatterGather, (EthernetFeature)featureStrings["tx-scatter-gather"]);
-        Assert.AreEqual(EthernetFeature.TxUdpSegmentation, (EthernetFeature)featureStrings["tx-udp-segmentation"]);
-        Assert.AreEqual(EthernetFeature.HsrDupOffload, (EthernetFeature)featureStrings["hsr-dup-offload"]);
+        Assert.AreEqual("tx-scatter-gather", featureStrings[(int)EthernetFeature.TxScatterGather]);
+        Assert.AreEqual("tx-udp-segmentation", featureStrings[(int)EthernetFeature.TxUdpSegmentation]);
+        Assert.AreEqual("hsr-dup-offload", featureStrings[(int)EthernetFeature.HsrDupOffload]);
     }
 
     [TestMethod]

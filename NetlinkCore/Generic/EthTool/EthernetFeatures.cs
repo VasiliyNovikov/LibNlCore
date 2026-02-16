@@ -1,4 +1,4 @@
-namespace NetlinkCore.Generic;
+namespace NetlinkCore.Generic.EthTool;
 
 public class EthernetFeatures
 {

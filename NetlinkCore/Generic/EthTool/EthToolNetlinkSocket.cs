@@ -1,14 +1,15 @@
 using System;
 using System.Buffers.Binary;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 
 using NetlinkCore.Interop.Generic;
 
-namespace NetlinkCore.Generic;
+namespace NetlinkCore.Generic.EthTool;
 
 public sealed class EthToolNetlinkSocket() : GenericNetlinkSocket<GENL_ETHTOOL_MSG>("ethtool")
 {
-    internal StringSet GetStringSet(ethtool_stringset stringSet)
+    internal Dictionary<int, string> GetStringSet(ethtool_stringset stringSet)
     {
         using var buffer = new NetlinkBuffer(NetlinkBufferSize.Large);
         var writer = GetWriter<GENL_ETHTOOL_A_STRSET>(buffer);
@@ -31,7 +32,7 @@ public sealed class EthToolNetlinkSocket() : GenericNetlinkSocket<GENL_ETHTOOL_M
                                 foreach (var setAttr in setsAttr.AsNested<GENL_ETHTOOL_A_STRINGSET>())
                                     if (setAttr.Name == GENL_ETHTOOL_A_STRINGSET.ETHTOOL_A_STRINGSET_STRINGS)
                                     {
-                                        var strings = new StringSet();
+                                        var strings = new Dictionary<int, string>();
                                         foreach (var stringsAttr in setAttr.AsNested<GENL_ETHTOOL_A_STRINGS>())
                                             if (stringsAttr.Name == GENL_ETHTOOL_A_STRINGS.ETHTOOL_A_STRINGS_STRING)
                                             {
