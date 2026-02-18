@@ -1,7 +1,5 @@
 using System;
 
-using NetlinkCore.Interop;
-
 namespace NetlinkCore.Protocol;
 
 internal readonly unsafe ref struct NetlinkMessageCollection(NetlinkSocket socket, Span<byte> buffer)
@@ -30,18 +28,17 @@ internal readonly unsafe ref struct NetlinkMessageCollection(NetlinkSocket socke
             if (kind == NetlinkMessageKind.Error)
             {
                 var errorReader = new SpanReader(payload);
-                var error = errorReader.Read<nlmsgerr>().error;
+                var error = errorReader.Read<NetlinkErrorMessageHeader>().Error;
                 if (error == 0)
                     return false;
-                var errorAttrs = new NetlinkAttributeCollection<NLMSGERR_ATTRS>(errorReader.ReadToEnd());
+                var errorAttrs = new NetlinkAttributeCollection<NetlinkErrorMessageAttributes>(errorReader.ReadToEnd());
                 string? message = null;
                 foreach (var errorAttr in errorAttrs)
-                {
-                    if (errorAttr.Name != NLMSGERR_ATTRS.NLMSGERR_ATTR_MSG)
-                        continue;
-                    message = errorAttr.AsString();
-                    break;
-                }
+                    if (errorAttr.Name == NetlinkErrorMessageAttributes.Message)
+                    {
+                        message = errorAttr.AsString();
+                        break;
+                    }
                 throw new NetlinkException(error, message);
             }
 

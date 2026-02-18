@@ -1,5 +1,8 @@
+using System;
+
 namespace NetlinkCore.Interop.Route;
 
+[Flags]
 internal enum net_device_flags : uint
 {
     IFF_UP          = 1 << 0,

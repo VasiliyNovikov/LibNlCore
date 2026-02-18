@@ -22,7 +22,7 @@ public sealed class RouteNetlinkSocket() : NetlinkSocket(NetlinkFamily.Route)
     public Link GetLink(string name)
     {
         using var buffer = new NetlinkBuffer(NetlinkBufferSize.Small);
-        var writer = GetWriter<ifinfomsg, IFLA_ATTRS>(buffer);
+        var writer = GetWriter<RouteLinkMessage, IFLA_ATTRS>(buffer);
         writer.Type = RouteNetlinkMessageType.GetLink;
         writer.Flags = NetlinkMessageFlags.Request;
         writer.Attributes.Write(IFLA_ATTRS.IFLA_IFNAME, name);
@@ -35,7 +35,7 @@ public sealed class RouteNetlinkSocket() : NetlinkSocket(NetlinkFamily.Route)
     public Link GetLink(int index)
     {
         using var buffer = new NetlinkBuffer(NetlinkBufferSize.Small);
-        var writer = GetWriter<ifinfomsg, IFLA_ATTRS>(buffer);
+        var writer = GetWriter<RouteLinkMessage, IFLA_ATTRS>(buffer);
         writer.Type = RouteNetlinkMessageType.GetLink;
         writer.Flags = NetlinkMessageFlags.Request;
         writer.Header.ifi_index = index;
@@ -48,7 +48,7 @@ public sealed class RouteNetlinkSocket() : NetlinkSocket(NetlinkFamily.Route)
     public Link[] GetLinks()
     {
         using var buffer = new NetlinkBuffer(NetlinkBufferSize.Large);
-        var writer = GetWriter<ifinfomsg, IFLA_ATTRS>(buffer);
+        var writer = GetWriter<RouteLinkMessage, IFLA_ATTRS>(buffer);
         writer.Type = RouteNetlinkMessageType.GetLink;
         writer.Flags = NetlinkMessageFlags.Request | NetlinkMessageFlags.Dump;
         var links = new List<Link>();
@@ -61,7 +61,7 @@ public sealed class RouteNetlinkSocket() : NetlinkSocket(NetlinkFamily.Route)
     public void UpdateLink(Link origLink, Link link)
     {
         using var buffer = new NetlinkBuffer(NetlinkBufferSize.Small);
-        var writer = GetWriter<ifinfomsg, IFLA_ATTRS>(buffer);
+        var writer = GetWriter<RouteLinkMessage, IFLA_ATTRS>(buffer);
         writer.Type = RouteNetlinkMessageType.SetLink;
         writer.Flags = NetlinkMessageFlags.Request | NetlinkMessageFlags.Ack;
         writer.Header.ifi_index = origLink.Index;
@@ -82,7 +82,7 @@ public sealed class RouteNetlinkSocket() : NetlinkSocket(NetlinkFamily.Route)
     public void DeleteLink(string name)
     {
         using var buffer = new NetlinkBuffer(NetlinkBufferSize.Small);
-        var writer = GetWriter<ifinfomsg, IFLA_ATTRS>(buffer);
+        var writer = GetWriter<RouteLinkMessage, IFLA_ATTRS>(buffer);
         writer.Type = RouteNetlinkMessageType.DeleteLink;
         writer.Flags = NetlinkMessageFlags.Request | NetlinkMessageFlags.Ack;
         writer.Attributes.Write(IFLA_ATTRS.IFLA_IFNAME, name);
@@ -92,7 +92,7 @@ public sealed class RouteNetlinkSocket() : NetlinkSocket(NetlinkFamily.Route)
     public void DeleteLink(int index)
     {
         using var buffer = new NetlinkBuffer(NetlinkBufferSize.Small);
-        var writer = GetWriter<ifinfomsg, IFLA_ATTRS>(buffer);
+        var writer = GetWriter<RouteLinkMessage, IFLA_ATTRS>(buffer);
         writer.Type = RouteNetlinkMessageType.DeleteLink;
         writer.Flags = NetlinkMessageFlags.Request | NetlinkMessageFlags.Ack;
         writer.Header.ifi_index = index;
@@ -107,7 +107,7 @@ public sealed class RouteNetlinkSocket() : NetlinkSocket(NetlinkFamily.Route)
         {
             infoAttrs.Writer.Write(IFLA_INFO_ATTRS.IFLA_INFO_KIND, "veth");
             using var vethAttrs = infoAttrs.Writer.WriteNested<VETH_INFO_ATTRS>(IFLA_INFO_ATTRS.IFLA_INFO_DATA);
-            using var peerAttrs = vethAttrs.Writer.WriteNested<IFLA_ATTRS, ifinfomsg>(VETH_INFO_ATTRS.VETH_INFO_PEER);
+            using var peerAttrs = vethAttrs.Writer.WriteNested<IFLA_ATTRS, RouteLinkMessage>(VETH_INFO_ATTRS.VETH_INFO_PEER);
             peerAttrs.Header = default;
             peerAttrs.Writer.Write(IFLA_ATTRS.IFLA_IFNAME, peerName);
             if (rxQueueCount is not null)
@@ -130,7 +130,7 @@ public sealed class RouteNetlinkSocket() : NetlinkSocket(NetlinkFamily.Route)
     public void MoveTo(int index, NetNs ns)
     {
         using var buffer = new NetlinkBuffer(NetlinkBufferSize.Small);
-        var writer = GetWriter<ifinfomsg, IFLA_ATTRS>(buffer);
+        var writer = GetWriter<RouteLinkMessage, IFLA_ATTRS>(buffer);
         writer.Type = RouteNetlinkMessageType.NewLink;
         writer.Flags = NetlinkMessageFlags.Request | NetlinkMessageFlags.Ack;
         writer.Header.ifi_index = index;
@@ -138,9 +138,9 @@ public sealed class RouteNetlinkSocket() : NetlinkSocket(NetlinkFamily.Route)
         Post(buffer, writer);
     }
 
-    private RouteNetlinkMessageWriter<ifinfomsg, IFLA_ATTRS> BeginCreateLink(Span<byte> buffer, string name, int? rxQueueCount, int? txQueueCount)
+    private RouteNetlinkMessageWriter<RouteLinkMessage, IFLA_ATTRS> BeginCreateLink(Span<byte> buffer, string name, int? rxQueueCount, int? txQueueCount)
     {
-        var writer = GetWriter<ifinfomsg, IFLA_ATTRS>(buffer);
+        var writer = GetWriter<RouteLinkMessage, IFLA_ATTRS>(buffer);
         writer.Type = RouteNetlinkMessageType.NewLink;
         writer.Flags = NetlinkMessageFlags.Request | NetlinkMessageFlags.Create | NetlinkMessageFlags.Exclusive | NetlinkMessageFlags.Ack;
         writer.Attributes.Write(IFLA_ATTRS.IFLA_IFNAME, name);
@@ -151,10 +151,10 @@ public sealed class RouteNetlinkSocket() : NetlinkSocket(NetlinkFamily.Route)
         return writer;
     }
 
-    private static Link ParseLink(RouteNetlinkMessage<ifinfomsg, IFLA_ATTRS> message)
+    private static Link ParseLink(RouteNetlinkMessage<RouteLinkMessage, IFLA_ATTRS> message)
     {
         var ifIndex = message.Header.ifi_index;
-        var up = (message.Header.ifi_flags & net_device_flags.IFF_UP) != 0;
+        var up = message.Header.ifi_flags.HasFlag(net_device_flags.IFF_UP);
         string? name = null;
         MACAddress? macAddress = null;
         int? masterIndex = null;
@@ -196,23 +196,23 @@ public sealed class RouteNetlinkSocket() : NetlinkSocket(NetlinkFamily.Route)
             return [.. GetAddresses(linkIndex, AddressFamily.InterNetwork), .. GetAddresses(linkIndex, AddressFamily.InterNetworkV6)];
 
         using var buffer = new NetlinkBuffer(NetlinkBufferSize.Large);
-        var writer = GetWriter<ifaddrmsg, IFA_ATTRS>(buffer);
+        var writer = GetWriter<RouteAddressMessage, IFA_ATTRS>(buffer);
         writer.Type = RouteNetlinkMessageType.GetAddress;
         writer.Flags = NetlinkMessageFlags.Request | NetlinkMessageFlags.Dump;
-        writer.Header.ifa_index = (uint)linkIndex;
-        writer.Header.ifa_family = (byte)(addressFamily switch
+        writer.Header.LinkIndex = (uint)linkIndex;
+        writer.Header.Family = addressFamily switch
         {
             AddressFamily.InterNetwork => LinuxAddressFamily.Inet,
             AddressFamily.InterNetworkV6 => LinuxAddressFamily.Inet6,
             _ => throw new ArgumentException($"Unsupported address family: {addressFamily}", nameof(addressFamily))
-        });
+        };
         var addresses = new List<LinkAddress>();
         foreach (var message in Get(buffer, writer))
             if (message.Type == RouteNetlinkMessageType.NewAddress)
             {
-                var prefixLength = message.Header.ifa_prefixlen;
+                var prefixLength = message.Header.PrefixLength;
                 IPAddress? address = null;
-                ifa_flags flags = default;
+                RouteAddressFlags flags = default;
                 foreach (var attribute in message.Attributes)
                     switch (attribute.Name)
                     {
@@ -220,12 +220,12 @@ public sealed class RouteNetlinkSocket() : NetlinkSocket(NetlinkFamily.Route)
                             address = new IPAddress(attribute.Data);
                             break;
                         case IFA_ATTRS.IFA_FLAGS:
-                            flags = attribute.AsValue<ifa_flags>();
+                            flags = attribute.AsValue<RouteAddressFlags>();
                             break;
                     }
                 if (address is null)
                     throw new InvalidOperationException($"Address on link with index '{linkIndex}' is missing an address attribute");
-                addresses.Add(new LinkAddress(address, prefixLength, (flags & ifa_flags.IFA_F_NODAD) != 0));
+                addresses.Add(new LinkAddress(address, prefixLength, flags.HasFlag(RouteAddressFlags.NoDad)));
             }
         return [.. addresses];
     }
@@ -233,7 +233,7 @@ public sealed class RouteNetlinkSocket() : NetlinkSocket(NetlinkFamily.Route)
     public void AddAddress(int linkIndex, LinkAddress address)
     {
         using var buffer = new NetlinkBuffer(NetlinkBufferSize.Small);
-        var writer = GetWriter<ifaddrmsg, IFA_ATTRS>(buffer);
+        var writer = GetWriter<RouteAddressMessage, IFA_ATTRS>(buffer);
         writer.Type = RouteNetlinkMessageType.NewAddress;
         writer.Flags = NetlinkMessageFlags.Request | NetlinkMessageFlags.Create | NetlinkMessageFlags.Exclusive | NetlinkMessageFlags.Ack;
         WriteAddress(writer, linkIndex, address);
@@ -243,18 +243,18 @@ public sealed class RouteNetlinkSocket() : NetlinkSocket(NetlinkFamily.Route)
     public void DeleteAddress(int linkIndex, LinkAddress address)
     {
         using var buffer = new NetlinkBuffer(NetlinkBufferSize.Small);
-        var writer = GetWriter<ifaddrmsg, IFA_ATTRS>(buffer);
+        var writer = GetWriter<RouteAddressMessage, IFA_ATTRS>(buffer);
         writer.Type = RouteNetlinkMessageType.DeleteAddress;
         writer.Flags = NetlinkMessageFlags.Request | NetlinkMessageFlags.Ack;
         WriteAddress(writer, linkIndex, address);
         Post(buffer, writer);
     }
 
-    private static void WriteAddress(RouteNetlinkMessageWriter<ifaddrmsg, IFA_ATTRS> writer, int linkIndex, LinkAddress address)
+    private static void WriteAddress(RouteNetlinkMessageWriter<RouteAddressMessage, IFA_ATTRS> writer, int linkIndex, LinkAddress address)
     {
-        writer.Header.ifa_index = (uint)linkIndex;
-        writer.Header.ifa_prefixlen = address.PrefixLength;
-        writer.Header.ifa_family = (byte)(address.AddressFamily == AddressFamily.InterNetwork ? LinuxAddressFamily.Inet : LinuxAddressFamily.Inet6);
+        writer.Header.LinkIndex = (uint)linkIndex;
+        writer.Header.PrefixLength = address.PrefixLength;
+        writer.Header.Family = address.AddressFamily == AddressFamily.InterNetwork ? LinuxAddressFamily.Inet : LinuxAddressFamily.Inet6;
         var size = address.AddressFamily == AddressFamily.InterNetwork ? 4 : 16;
         var localBytes = writer.Attributes.PrepareWrite(IFA_ATTRS.IFA_LOCAL, size);
         address.Address.TryWriteBytes(localBytes, out _);
@@ -262,8 +262,8 @@ public sealed class RouteNetlinkSocket() : NetlinkSocket(NetlinkFamily.Route)
         localBytes.CopyTo(addressBytes);
         if (address.NoDad)
         {
-            writer.Header.ifa_flags |= (byte)ifa_flags.IFA_F_NODAD;
-            writer.Attributes.Write(IFA_ATTRS.IFA_FLAGS, ifa_flags.IFA_F_NODAD);
+            writer.Header.Flags |= RouteAddressFlags.NoDad;
+            writer.Attributes.Write(IFA_ATTRS.IFA_FLAGS, RouteAddressFlags.NoDad);
         }
     }
 

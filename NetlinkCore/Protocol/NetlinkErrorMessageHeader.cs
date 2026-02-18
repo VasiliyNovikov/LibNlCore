@@ -1,14 +1,13 @@
 using System.Runtime.InteropServices;
 
-using NetlinkCore.Protocol;
+namespace NetlinkCore.Protocol;
 
-namespace NetlinkCore.Interop;
-
+// struct nlmsgerr
 [StructLayout(LayoutKind.Sequential)]
-internal readonly struct nlmsgerr
+internal readonly struct NetlinkErrorMessageHeader
 {
-    public readonly int error;
-    public readonly NetlinkMessageHeader msg;
+    public readonly int Error;
+    public readonly NetlinkMessageHeader Message;
     /*
      * followed by the message contents unless NETLINK_CAP_ACK was set
      * or the ACK indicates success (error == 0)
