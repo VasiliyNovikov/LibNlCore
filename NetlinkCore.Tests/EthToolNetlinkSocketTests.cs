@@ -1,7 +1,7 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 using NetlinkCore.Generic.EthTool;
-using NetlinkCore.Protocol.Generic;
+using NetlinkCore.Protocol.Generic.EthTool;
 using NetlinkCore.Route;
 
 namespace NetlinkCore.Tests;

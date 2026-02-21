@@ -1,6 +1,6 @@
 using System;
 
-namespace NetlinkCore.Protocol.Generic;
+namespace NetlinkCore.Protocol.Generic.EthTool;
 
 [Flags]
 internal enum EthToolFlags

@@ -1,4 +1,4 @@
-namespace NetlinkCore.Protocol.Generic;
+namespace NetlinkCore.Protocol.Generic.EthTool;
 
 internal enum EthToolBitsetAttributes : ushort
 {

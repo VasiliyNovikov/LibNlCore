@@ -1,4 +1,4 @@
-namespace NetlinkCore.Protocol.Generic;
+namespace NetlinkCore.Protocol.Generic.EthTool;
 
 // enum ethtool_stringset
 internal enum EthToolStringSet

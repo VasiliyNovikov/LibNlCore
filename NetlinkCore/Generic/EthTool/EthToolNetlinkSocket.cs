@@ -3,8 +3,8 @@ using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 
-using NetlinkCore.Protocol.Generic;
 using NetlinkCore.Protocol;
+using NetlinkCore.Protocol.Generic.EthTool;
 
 namespace NetlinkCore.Generic.EthTool;
 
