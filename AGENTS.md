@@ -29,12 +29,14 @@ Tests are globally marked `[DoNotParallelize]` and run sequentially.
 
 ## Architecture
 
-Layered protocol wrapper with three socket families:
+Layered protocol wrapper with two socket families:
 
 ```
 RouteNetlinkSocket / EthToolNetlinkSocket    ← High-level API
         ↓                    ↓
-   NetlinkSocket (abstract base)             ← Socket lifecycle, send/receive
+        ↓         GenericNetlinkSocket<TCmd>  ← Generic family base (templated on command enum)
+        ↓                    ↓
+   NetlinkSocket (abstract base)             ← Socket lifecycle, send/receive, Get<>/Post<>
         ↓
    Protocol Layer                            ← Message/attribute builders
    (NetlinkMessageWriter, NetlinkAttributeWriter, SpanReader/SpanWriter)
@@ -52,6 +54,13 @@ RouteNetlinkSocket / EthToolNetlinkSocket    ← High-level API
 - **Lazy collections**: `NetlinkMessageCollection` and `NetlinkAttributeCollection` implement iterator protocol for zero-copy parsing
 - **Pooled buffers**: `NetlinkBuffer` wraps `ArrayPool<byte>` for send/receive buffers
 - **Family resolution**: `GenericNetlinkFamilyResolver` caches generic netlink family IDs (thread-safe via `Lock`)
+- **Nested attributes**: Scoped `WriteNested<>()` for complex hierarchical request/response structures
+
+## Testing Patterns
+
+- Tests follow create-test-delete with try/finally for resource cleanup (virtual interfaces, bridges)
+- Socket lifecycle managed via `using` statements
+- `InternalsVisibleTo("NetlinkCore.Tests")` exposes internals to the test project
 
 ## Code Style
 
@@ -60,6 +69,7 @@ Configured in `.editorconfig`:
 - LF line endings, no final newline
 - File-scoped namespaces
 - `var` usage allowed (IDE0008 suppressed)
+- Expression-bodied members allowed (IDE0021/0022/0023 suppressed)
 - Kernel constant files in `Protocol/`
 - Test files allow underscores in names (CA1707 suppressed)
 
