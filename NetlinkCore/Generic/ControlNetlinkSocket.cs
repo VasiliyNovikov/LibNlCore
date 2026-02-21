@@ -1,11 +1,11 @@
 using System;
 
-using NetlinkCore.Interop.Generic;
+using NetlinkCore.Protocol.Generic;
 using NetlinkCore.Protocol;
 
 namespace NetlinkCore.Generic;
 
-public sealed class ControlNetlinkSocket() : GenericNetlinkSocket<GENL_CTRL_CMD>(Family)
+public sealed class ControlNetlinkSocket() : GenericNetlinkSocket<GenericControlCommand>(Family)
 {
     private const ushort FamilyId = 0x10; // GENL_ID_CTRL
     private const byte FamilyVersion = 1;
@@ -14,12 +14,12 @@ public sealed class ControlNetlinkSocket() : GenericNetlinkSocket<GENL_CTRL_CMD>
     public GenericNetlinkFamily GetFamily(string familyName)
     {
         using var buffer = new NetlinkBuffer(NetlinkBufferSize.Small);
-        var writer = GetWriter<GENL_CTRL_ATTR>(buffer);
+        var writer = GetWriter<GenericControlAttributes>(buffer);
         writer.Flags = NetlinkMessageFlags.Request;
-        writer.Command = GENL_CTRL_CMD.CTRL_CMD_GETFAMILY;
-        writer.Attributes.Write(GENL_CTRL_ATTR.CTRL_ATTR_FAMILY_NAME, familyName);
+        writer.Command = GenericControlCommand.GetFamily;
+        writer.Attributes.Write(GenericControlAttributes.FamilyName, familyName);
         foreach (var message in Get(buffer, writer))
-            if (message.Command == GENL_CTRL_CMD.CTRL_CMD_NEWFAMILY)
+            if (message.Command == GenericControlCommand.NewFamily)
             {
                 ushort id = 0;
                 byte version = 0;
@@ -27,10 +27,10 @@ public sealed class ControlNetlinkSocket() : GenericNetlinkSocket<GENL_CTRL_CMD>
                 {
                     switch (attribute.Name)
                     {
-                        case GENL_CTRL_ATTR.CTRL_ATTR_FAMILY_ID:
+                        case GenericControlAttributes.FamilyId:
                             id = attribute.AsValue<ushort>();
                             break;
-                        case GENL_CTRL_ATTR.CTRL_ATTR_VERSION:
+                        case GenericControlAttributes.Version:
                             version = (byte)attribute.AsValue<uint>();
                             break;
                     }

@@ -3,49 +3,49 @@ using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 
-using NetlinkCore.Interop.Generic;
+using NetlinkCore.Protocol.Generic;
 using NetlinkCore.Protocol;
 
 namespace NetlinkCore.Generic.EthTool;
 
-public sealed class EthToolNetlinkSocket() : GenericNetlinkSocket<GENL_ETHTOOL_MSG>("ethtool")
+public sealed class EthToolNetlinkSocket() : GenericNetlinkSocket<EthToolCommand>("ethtool")
 {
-    internal Dictionary<int, string> GetStringSet(ethtool_stringset stringSet)
+    internal Dictionary<int, string> GetStringSet(EthToolStringSet stringSet)
     {
         using var buffer = new NetlinkBuffer(NetlinkBufferSize.Large);
-        var writer = GetWriter<GENL_ETHTOOL_A_STRSET>(buffer);
+        var writer = GetWriter<EthToolStringSetRequestAttributes>(buffer);
         writer.Flags = NetlinkMessageFlags.Request;
-        writer.Command = GENL_ETHTOOL_MSG.ETHTOOL_MSG_STRSET_GET;
-        using (writer.Attributes.WriteNested<GENL_ETHTOOL_A_HEADER>(GENL_ETHTOOL_A_STRSET.ETHTOOL_A_STRSET_HEADER))
+        writer.Command = EthToolCommand.StringSetGet;
+        using (writer.Attributes.WriteNested<EthToolHeaderAttributes>(EthToolStringSetRequestAttributes.Header))
         {
         }
-        using (var setsAttrs = writer.Attributes.WriteNested<GENL_ETHTOOL_A_STRINGSETS>(GENL_ETHTOOL_A_STRSET.ETHTOOL_A_STRSET_STRINGSETS))
+        using (var setsAttrs = writer.Attributes.WriteNested<EthToolStringSetsAttributes>(EthToolStringSetRequestAttributes.StringSets))
         {
-            using var setAttrs = setsAttrs.Writer.WriteNested<GENL_ETHTOOL_A_STRINGSET>(GENL_ETHTOOL_A_STRINGSETS.ETHTOOL_A_STRINGSETS_STRINGSET);
-            setAttrs.Writer.Write(GENL_ETHTOOL_A_STRINGSET.ETHTOOL_A_STRINGSET_ID, stringSet);
+            using var setAttrs = setsAttrs.Writer.WriteNested<EthToolStringSetAttributes>(EthToolStringSetsAttributes.StringSet);
+            setAttrs.Writer.Write(EthToolStringSetAttributes.Id, stringSet);
         }
         foreach (var message in Get(buffer, writer))
-            if (message.Command == GENL_ETHTOOL_MSG.ETHTOOL_MSG_STRSET_GET)
+            if (message.Command == EthToolCommand.StringSetGet)
                 foreach (var attr in message.Attributes)
-                    if (attr.Name == GENL_ETHTOOL_A_STRSET.ETHTOOL_A_STRSET_STRINGSETS)
-                        foreach (var setsAttr in attr.AsNested<GENL_ETHTOOL_A_STRINGSETS>())
-                            if (setsAttr.Name == GENL_ETHTOOL_A_STRINGSETS.ETHTOOL_A_STRINGSETS_STRINGSET)
-                                foreach (var setAttr in setsAttr.AsNested<GENL_ETHTOOL_A_STRINGSET>())
-                                    if (setAttr.Name == GENL_ETHTOOL_A_STRINGSET.ETHTOOL_A_STRINGSET_STRINGS)
+                    if (attr.Name == EthToolStringSetRequestAttributes.StringSets)
+                        foreach (var setsAttr in attr.AsNested<EthToolStringSetsAttributes>())
+                            if (setsAttr.Name == EthToolStringSetsAttributes.StringSet)
+                                foreach (var setAttr in setsAttr.AsNested<EthToolStringSetAttributes>())
+                                    if (setAttr.Name == EthToolStringSetAttributes.Strings)
                                     {
                                         var strings = new Dictionary<int, string>();
-                                        foreach (var stringsAttr in setAttr.AsNested<GENL_ETHTOOL_A_STRINGS>())
-                                            if (stringsAttr.Name == GENL_ETHTOOL_A_STRINGS.ETHTOOL_A_STRINGS_STRING)
+                                        foreach (var stringsAttr in setAttr.AsNested<EthToolStringsAttributes>())
+                                            if (stringsAttr.Name == EthToolStringsAttributes.String)
                                             {
                                                 int? index = null;
                                                 string? name = null;
-                                                foreach (var stringAttr in stringsAttr.AsNested<GENL_ETHTOOL_A_STRING>())
+                                                foreach (var stringAttr in stringsAttr.AsNested<EthToolStringAttributes>())
                                                     switch (stringAttr.Name)
                                                     {
-                                                        case GENL_ETHTOOL_A_STRING.ETHTOOL_A_STRING_INDEX:
+                                                        case EthToolStringAttributes.Index:
                                                             index = stringAttr.AsValue<int>();
                                                             break;
-                                                        case GENL_ETHTOOL_A_STRING.ETHTOOL_A_STRING_VALUE:
+                                                        case EthToolStringAttributes.Value:
                                                             name = stringAttr.AsString();
                                                             break;
                                                     }
@@ -60,40 +60,40 @@ public sealed class EthToolNetlinkSocket() : GenericNetlinkSocket<GENL_ETHTOOL_M
     public EthernetFeatures GetFeatures(int linkIndex)
     {
         using var buffer = new NetlinkBuffer(NetlinkBufferSize.Large);
-        var writer = GetWriter<GENL_ETHTOOL_A_FEATURES>(buffer);
+        var writer = GetWriter<EthToolFeaturesAttributes>(buffer);
         writer.Flags = NetlinkMessageFlags.Request;
-        writer.Command = GENL_ETHTOOL_MSG.ETHTOOL_MSG_FEATURES_GET;
-        using (var headerScope = writer.Attributes.WriteNested<GENL_ETHTOOL_A_HEADER>(GENL_ETHTOOL_A_FEATURES.ETHTOOL_A_FEATURES_HEADER))
+        writer.Command = EthToolCommand.FeaturesGet;
+        using (var headerScope = writer.Attributes.WriteNested<EthToolHeaderAttributes>(EthToolFeaturesAttributes.Header))
         {
-            headerScope.Writer.Write(GENL_ETHTOOL_A_HEADER.ETHTOOL_A_HEADER_DEV_INDEX, linkIndex);
-            headerScope.Writer.Write(GENL_ETHTOOL_A_HEADER.ETHTOOL_A_HEADER_FLAGS, GENL_ETHTOOL_FLAGS.ETHTOOL_FLAG_COMPACT_BITSETS);
+            headerScope.Writer.Write(EthToolHeaderAttributes.LinkIndex, linkIndex);
+            headerScope.Writer.Write(EthToolHeaderAttributes.Flags, EthToolFlags.CompactBitsets);
         }
         foreach (var message in Get(buffer, writer))
-            if (message.Command == GENL_ETHTOOL_MSG.ETHTOOL_MSG_FEATURES_GET)
+            if (message.Command == EthToolCommand.FeaturesGet)
             {
                 ulong supported = 0;
                 ulong active = 0;
                 ulong wanted = 0;
                 ulong noChange = 0;
                 foreach (var attr in message.Attributes)
-                    if (attr.Name is GENL_ETHTOOL_A_FEATURES.ETHTOOL_A_FEATURES_ACTIVE or
-                                     GENL_ETHTOOL_A_FEATURES.ETHTOOL_A_FEATURES_HW or
-                                     GENL_ETHTOOL_A_FEATURES.ETHTOOL_A_FEATURES_WANTED or
-                                     GENL_ETHTOOL_A_FEATURES.ETHTOOL_A_FEATURES_NOCHANGE)
+                    if (attr.Name is EthToolFeaturesAttributes.Active or
+                                     EthToolFeaturesAttributes.Supported or
+                                     EthToolFeaturesAttributes.Wanted or
+                                     EthToolFeaturesAttributes.NoChange)
                     {
                         scoped ref var bitSet = ref Unsafe.NullRef<ulong>();
                         switch (attr.Name)
                         {
-                            case GENL_ETHTOOL_A_FEATURES.ETHTOOL_A_FEATURES_ACTIVE:
+                            case EthToolFeaturesAttributes.Active:
                                 bitSet = ref active;
                                 break;
-                            case GENL_ETHTOOL_A_FEATURES.ETHTOOL_A_FEATURES_HW:
+                            case EthToolFeaturesAttributes.Supported:
                                 bitSet = ref supported;
                                 break;
-                            case GENL_ETHTOOL_A_FEATURES.ETHTOOL_A_FEATURES_WANTED:
+                            case EthToolFeaturesAttributes.Wanted:
                                 bitSet = ref wanted;
                                 break;
-                            case GENL_ETHTOOL_A_FEATURES.ETHTOOL_A_FEATURES_NOCHANGE:
+                            case EthToolFeaturesAttributes.NoChange:
                                 bitSet = ref noChange;
                                 break;
                             default:
@@ -103,19 +103,19 @@ public sealed class EthToolNetlinkSocket() : GenericNetlinkSocket<GENL_ETHTOOL_M
                         var noMask = false;
                         var size = 0;
                         var mask = 0UL;
-                        foreach (var bitsetAttr in attr.AsNested<GENL_ETHTOOL_A_BITSET>())
+                        foreach (var bitsetAttr in attr.AsNested<EthToolBitsetAttributes>())
                             switch (bitsetAttr.Name)
                             {
-                                case GENL_ETHTOOL_A_BITSET.ETHTOOL_A_BITSET_NOMASK:
+                                case EthToolBitsetAttributes.NoMask:
                                     noMask = true;
                                     break;
-                                case GENL_ETHTOOL_A_BITSET.ETHTOOL_A_BITSET_SIZE:
+                                case EthToolBitsetAttributes.Size:
                                     size = bitsetAttr.AsValue<int>();
                                     break;
-                                case GENL_ETHTOOL_A_BITSET.ETHTOOL_A_BITSET_MASK:
+                                case EthToolBitsetAttributes.Mask:
                                     mask = BinaryPrimitives.ReadUInt64LittleEndian(bitsetAttr.Data);
                                     break;
-                                case GENL_ETHTOOL_A_BITSET.ETHTOOL_A_BITSET_VALUE:
+                                case EthToolBitsetAttributes.Value:
                                     bitSet = BinaryPrimitives.ReadUInt64LittleEndian(bitsetAttr.Data);
                                     break;
                             }
@@ -136,19 +136,19 @@ public sealed class EthToolNetlinkSocket() : GenericNetlinkSocket<GENL_ETHTOOL_M
             return;
 
         using var buffer = new NetlinkBuffer(NetlinkBufferSize.Large);
-        var writer = GetWriter<GENL_ETHTOOL_A_FEATURES>(buffer);
+        var writer = GetWriter<EthToolFeaturesAttributes>(buffer);
         writer.Flags = NetlinkMessageFlags.Request | NetlinkMessageFlags.Ack;
-        writer.Command = GENL_ETHTOOL_MSG.ETHTOOL_MSG_FEATURES_SET;
-        using (var headerScope = writer.Attributes.WriteNested<GENL_ETHTOOL_A_HEADER>(GENL_ETHTOOL_A_FEATURES.ETHTOOL_A_FEATURES_HEADER))
+        writer.Command = EthToolCommand.FeaturesSet;
+        using (var headerScope = writer.Attributes.WriteNested<EthToolHeaderAttributes>(EthToolFeaturesAttributes.Header))
         {
-            headerScope.Writer.Write(GENL_ETHTOOL_A_HEADER.ETHTOOL_A_HEADER_DEV_INDEX, linkIndex);
-            headerScope.Writer.Write(GENL_ETHTOOL_A_HEADER.ETHTOOL_A_HEADER_FLAGS, GENL_ETHTOOL_FLAGS.ETHTOOL_FLAG_COMPACT_BITSETS);
+            headerScope.Writer.Write(EthToolHeaderAttributes.LinkIndex, linkIndex);
+            headerScope.Writer.Write(EthToolHeaderAttributes.Flags, EthToolFlags.CompactBitsets);
         }
-        using (var featureScope = writer.Attributes.WriteNested<GENL_ETHTOOL_A_BITSET>(GENL_ETHTOOL_A_FEATURES.ETHTOOL_A_FEATURES_WANTED))
+        using (var featureScope = writer.Attributes.WriteNested<EthToolBitsetAttributes>(EthToolFeaturesAttributes.Wanted))
         {
-            featureScope.Writer.Write(GENL_ETHTOOL_A_BITSET.ETHTOOL_A_BITSET_SIZE, 64);
-            BinaryPrimitives.WriteUInt64LittleEndian(featureScope.Writer.PrepareWrite(GENL_ETHTOOL_A_BITSET.ETHTOOL_A_BITSET_MASK, 8), updateMask);
-            BinaryPrimitives.WriteUInt64LittleEndian(featureScope.Writer.PrepareWrite(GENL_ETHTOOL_A_BITSET.ETHTOOL_A_BITSET_VALUE, 8), update);
+            featureScope.Writer.Write(EthToolBitsetAttributes.Size, 64);
+            BinaryPrimitives.WriteUInt64LittleEndian(featureScope.Writer.PrepareWrite(EthToolBitsetAttributes.Mask, 8), updateMask);
+            BinaryPrimitives.WriteUInt64LittleEndian(featureScope.Writer.PrepareWrite(EthToolBitsetAttributes.Value, 8), update);
         }
         Post(buffer, writer);
     }

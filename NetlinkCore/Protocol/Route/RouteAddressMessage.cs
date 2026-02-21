@@ -2,15 +2,13 @@ using System.Runtime.InteropServices;
 
 using LinuxCore;
 
-using NetlinkCore.Interop.Route;
-
 namespace NetlinkCore.Protocol.Route;
 
 // struct ifaddrmsg
 [StructLayout(LayoutKind.Sequential)]
 internal struct RouteAddressMessage
 {
-    private byte RawFamily;         // ifa_family 
+    private byte RawFamily;         // ifa_family
     public byte PrefixLength;       // ifa_prefixlen
     private byte RawFlags;          // ifa_flags
     public RouteAddressScope Scope; // ifa_scope

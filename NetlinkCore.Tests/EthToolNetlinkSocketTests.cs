@@ -1,7 +1,7 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 using NetlinkCore.Generic.EthTool;
-using NetlinkCore.Interop.Generic;
+using NetlinkCore.Protocol.Generic;
 using NetlinkCore.Route;
 
 namespace NetlinkCore.Tests;
@@ -19,7 +19,7 @@ public class EthToolNetlinkSocketTests
     public void EthToolNetlinkSocket_GetStringSet()
     {
         using var socket = new EthToolNetlinkSocket();
-        var featureStrings = socket.GetStringSet(ethtool_stringset.ETH_SS_FEATURES);
+        var featureStrings = socket.GetStringSet(EthToolStringSet.Features);
         Assert.IsNotEmpty(featureStrings);
         Assert.IsTrue(featureStrings.ContainsValue("tx-checksum-ipv4"));
     }
@@ -28,7 +28,7 @@ public class EthToolNetlinkSocketTests
     public void EthToolNetlinkSocket_FeatureIndices()
     {
         using var socket = new EthToolNetlinkSocket();
-        var featureStrings = socket.GetStringSet(ethtool_stringset.ETH_SS_FEATURES);
+        var featureStrings = socket.GetStringSet(EthToolStringSet.Features);
         Assert.AreEqual("tx-scatter-gather", featureStrings[(int)EthernetFeature.TxScatterGather]);
         Assert.AreEqual("tx-udp-segmentation", featureStrings[(int)EthernetFeature.TxUdpSegmentation]);
         Assert.AreEqual("hsr-dup-offload", featureStrings[(int)EthernetFeature.HsrDupOffload]);
