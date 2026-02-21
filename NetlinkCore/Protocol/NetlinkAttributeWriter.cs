@@ -16,7 +16,7 @@ internal readonly unsafe ref struct NetlinkAttributeWriter<TAttr>(SpanWriter wri
         header.Name = name;
         header.IsNested = false;
         header.IsNetworkByteOrder = false;
-        header.Length = (ushort)(length + Unsafe.SizeOf<NetlinkAttributeHeader<TAttr>>());
+        header.Length = checked((ushort)(length + Unsafe.SizeOf<NetlinkAttributeHeader<TAttr>>()));
         return _writer.Skip(length);
     }
 
@@ -72,7 +72,7 @@ internal readonly unsafe ref struct NetlinkAttributeWriter<TAttr>(SpanWriter wri
             Writer = new NetlinkAttributeWriter<TNestedAttr>(writer);
         }
 
-        public void Dispose() => _length = (ushort)(_writerLength - _writerStart + sizeof(NetlinkAttributeHeader<TAttr>));
+        public void Dispose() => _length = checked((ushort)(_writerLength - _writerStart + sizeof(NetlinkAttributeHeader<TAttr>)));
     }
 
     public readonly ref struct NestedScope<TNestedAttr, TNestedHeader> : IDisposable
@@ -97,6 +97,6 @@ internal readonly unsafe ref struct NetlinkAttributeWriter<TAttr>(SpanWriter wri
             Writer = new NetlinkAttributeWriter<TNestedAttr>(writer);
         }
 
-        public void Dispose() => _length = (ushort)(_writerLength - _writerStart + sizeof(NetlinkAttributeHeader<TAttr>) + sizeof(TNestedHeader));
+        public void Dispose() => _length = checked((ushort)(_writerLength - _writerStart + sizeof(NetlinkAttributeHeader<TAttr>) + sizeof(TNestedHeader)));
     }
 }
