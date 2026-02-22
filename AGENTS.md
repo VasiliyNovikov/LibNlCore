@@ -32,7 +32,9 @@ Tests are globally marked `[DoNotParallelize]` and run sequentially.
 Layered protocol wrapper with two socket families:
 
 ```
-RouteNetlinkSocket / EthToolNetlinkSocket    ← High-level API
+LinkCollection / Link / LinkFeatures         ← High-level Links API (user-facing)
+        ↓
+RouteNetlinkSocket / EthToolNetlinkSocket    ← Socket-level API
         ↓                    ↓
         ↓         GenericNetlinkSocket<TCmd>  ← Generic family base (templated on command enum)
         ↓                    ↓
@@ -45,7 +47,8 @@ RouteNetlinkSocket / EthToolNetlinkSocket    ← High-level API
 ```
 
 **Key directories:**
-- `LibNlCore/Route/` — NETLINK_ROUTE: link and address management
+- `LibNlCore/Links/` — High-level Links API: `LinkCollection` (entry point, manages socket lifecycle), `Link` (mutable network interface facade with settable properties like `Up`, `MacAddress`, `Master`), `LinkAddressCollection` (IP address management per link), `LinkFeatures` (ethtool feature toggling)
+- `LibNlCore/Route/` — NETLINK_ROUTE: socket-level link/address management, `LinkInformation` record, `LinkAddress`
 - `LibNlCore/Generic/` — NETLINK_GENERIC: generic netlink base + ethtool
 - `LibNlCore/Protocol/` — Zero-allocation message/attribute parsing and writing (ref structs), plus kernel constant enums/structs (C-style naming, relaxed rules in .editorconfig)
 
@@ -72,6 +75,12 @@ Configured in `.editorconfig`:
 - Expression-bodied members allowed (IDE0021/0022/0023 suppressed)
 - Kernel constant files in `Protocol/`
 - Test files allow underscores in names (CA1707 suppressed)
+
+## CI Pipeline
+
+GitHub Actions workflow (`.github/workflows/pipeline.yml`):
+- **Validate**: Builds and tests on `ubuntu-latest` and `ubuntu-24.04-arm` matrix, runs on push/PR to `master`
+- **Publish**: Packs and pushes to NuGet on `master` when `PUBLISH` repo variable is `true` or `auto`
 
 ## Dependencies
 
