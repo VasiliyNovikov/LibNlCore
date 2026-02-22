@@ -4,7 +4,7 @@ This file provides guidance to AI coding agents when working with code in this r
 
 ## Project Overview
 
-NetlinkCore is a high-performance .NET wrapper for Linux netlink sockets. It provides type-safe, zero-allocation abstractions over the kernel's netlink protocol for network interface management, ethtool features, and network namespace operations. Linux-only (`[SupportedOSPlatform("linux")]`).
+LibNlCore is a high-performance .NET wrapper for Linux netlink sockets. It provides type-safe, zero-allocation abstractions over the kernel's netlink protocol for network interface management, ethtool features, and network namespace operations. Linux-only (`[SupportedOSPlatform("linux")]`).
 
 ## Build and Test Commands
 
@@ -45,9 +45,9 @@ RouteNetlinkSocket / EthToolNetlinkSocket    ← High-level API
 ```
 
 **Key directories:**
-- `NetlinkCore/Route/` — NETLINK_ROUTE: link and address management
-- `NetlinkCore/Generic/` — NETLINK_GENERIC: generic netlink base + ethtool
-- `NetlinkCore/Protocol/` — Zero-allocation message/attribute parsing and writing (ref structs), plus kernel constant enums/structs (C-style naming, relaxed rules in .editorconfig)
+- `LibNlCore/Route/` — NETLINK_ROUTE: link and address management
+- `LibNlCore/Generic/` — NETLINK_GENERIC: generic netlink base + ethtool
+- `LibNlCore/Protocol/` — Zero-allocation message/attribute parsing and writing (ref structs), plus kernel constant enums/structs (C-style naming, relaxed rules in .editorconfig)
 
 **Core patterns:**
 - **Ref struct builders**: `NetlinkMessageWriter<THeader, TAttr>` and `NetlinkAttributeWriter<TAttr>` are stack-only, generic over `unmanaged` header structs and `Enum` attribute types
@@ -60,7 +60,7 @@ RouteNetlinkSocket / EthToolNetlinkSocket    ← High-level API
 
 - Tests follow create-test-delete with try/finally for resource cleanup (virtual interfaces, bridges)
 - Socket lifecycle managed via `using` statements
-- `InternalsVisibleTo("NetlinkCore.Tests")` exposes internals to the test project
+- `InternalsVisibleTo("LibNlCore.Tests")` exposes internals to the test project
 
 ## Code Style
 
