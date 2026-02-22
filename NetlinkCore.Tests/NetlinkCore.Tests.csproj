@@ -1,8 +1,0 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
-  <ItemGroup>
-    <PackageReference Include="MSTest" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\NetlinkCore\NetlinkCore.csproj" />
-  </ItemGroup>
-</Project>
