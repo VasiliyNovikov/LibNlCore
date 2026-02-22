@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using System.Net;
 using System.Net.Sockets;
 
@@ -18,5 +19,22 @@ public sealed class LinkAddress
         Address = address;
         PrefixLength = prefixLength;
         NoDad = noDad;
+    }
+    
+    public static LinkAddress Parse(string addressString)
+    {
+        var slashIndex = addressString.IndexOf('/');
+        if (slashIndex < 0)
+        {
+            var address = IPAddress.Parse(addressString);
+            var prefixLength = (byte)(address.AddressFamily == AddressFamily.InterNetwork ? 32 : 128);
+            return new(address, prefixLength);
+        }
+        else
+        {
+            var address = IPAddress.Parse(addressString.AsSpan(0, slashIndex));
+            var prefixLength = byte.Parse(addressString.AsSpan(slashIndex + 1), CultureInfo.InvariantCulture);
+            return new(address, prefixLength);
+        }
     }
 }
