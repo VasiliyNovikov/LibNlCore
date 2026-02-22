@@ -18,7 +18,7 @@ public sealed class RouteNetlinkSocket() : NetlinkSocket(NetlinkFamily.Route)
 {
     #region Links
 
-    public Link GetLink(string name)
+    public LinkInformation GetLink(string name)
     {
         using var buffer = new NetlinkBuffer(NetlinkBufferSize.Small);
         var writer = GetWriter<RouteLinkMessage, RouteLinkAttributes>(buffer);
@@ -31,7 +31,7 @@ public sealed class RouteNetlinkSocket() : NetlinkSocket(NetlinkFamily.Route)
         throw new InvalidOperationException($"Link with name '{name}' not found");
     }
 
-    public Link GetLink(int index)
+    public LinkInformation GetLink(int index)
     {
         using var buffer = new NetlinkBuffer(NetlinkBufferSize.Small);
         var writer = GetWriter<RouteLinkMessage, RouteLinkAttributes>(buffer);
@@ -44,37 +44,37 @@ public sealed class RouteNetlinkSocket() : NetlinkSocket(NetlinkFamily.Route)
         throw new InvalidOperationException($"Link with index '{index}' not found");
     }
 
-    public Link[] GetLinks()
+    public LinkInformation[] GetLinks()
     {
         using var buffer = new NetlinkBuffer(NetlinkBufferSize.Large);
         var writer = GetWriter<RouteLinkMessage, RouteLinkAttributes>(buffer);
         writer.Type = RouteNetlinkMessageType.GetLink;
         writer.Flags = NetlinkMessageFlags.Request | NetlinkMessageFlags.Dump;
-        var links = new List<Link>();
+        var links = new List<LinkInformation>();
         foreach (var message in Get(buffer, writer))
             if (message.Type == RouteNetlinkMessageType.NewLink)
                 links.Add(ParseLink(message));
         return [.. links];
     }
 
-    public void UpdateLink(Link origLink, Link link)
+    public void UpdateLink(LinkInformation origLinkInformation, LinkInformation linkInformation)
     {
         using var buffer = new NetlinkBuffer(NetlinkBufferSize.Small);
         var writer = GetWriter<RouteLinkMessage, RouteLinkAttributes>(buffer);
         writer.Type = RouteNetlinkMessageType.SetLink;
         writer.Flags = NetlinkMessageFlags.Request | NetlinkMessageFlags.Ack;
-        writer.Header.Index = origLink.Index;
-        if (origLink.Up != link.Up)
+        writer.Header.Index = origLinkInformation.Index;
+        if (origLinkInformation.Up != linkInformation.Up)
         {
-            writer.Header.Flags = link.Up ? NetDeviceFlags.Up : 0;
+            writer.Header.Flags = linkInformation.Up ? NetDeviceFlags.Up : 0;
             writer.Header.Change = NetDeviceFlags.Up;
         }
-        if (origLink.Name != link.Name)
-            writer.Attributes.Write(RouteLinkAttributes.Name, link.Name);
-        if (origLink.MacAddress != link.MacAddress && link.MacAddress is { } macAddress)
+        if (origLinkInformation.Name != linkInformation.Name)
+            writer.Attributes.Write(RouteLinkAttributes.Name, linkInformation.Name);
+        if (origLinkInformation.MacAddress != linkInformation.MacAddress && linkInformation.MacAddress is { } macAddress)
             writer.Attributes.Write(RouteLinkAttributes.Address, macAddress);
-        if (origLink.MasterIndex != link.MasterIndex)
-            writer.Attributes.Write(RouteLinkAttributes.Master, link.MasterIndex ?? 0);
+        if (origLinkInformation.MasterIndex != linkInformation.MasterIndex)
+            writer.Attributes.Write(RouteLinkAttributes.Master, linkInformation.MasterIndex ?? 0);
         Post(buffer, writer);
     }
 
@@ -150,7 +150,7 @@ public sealed class RouteNetlinkSocket() : NetlinkSocket(NetlinkFamily.Route)
         return writer;
     }
 
-    private static Link ParseLink(RouteNetlinkMessage<RouteLinkMessage, RouteLinkAttributes> message)
+    private static LinkInformation ParseLink(RouteNetlinkMessage<RouteLinkMessage, RouteLinkAttributes> message)
     {
         var ifIndex = message.Header.Index;
         var up = message.Header.Flags.HasFlag(NetDeviceFlags.Up);
@@ -182,7 +182,7 @@ public sealed class RouteNetlinkSocket() : NetlinkSocket(NetlinkFamily.Route)
         }
         return name is null
             ? throw new InvalidOperationException($"Link with index '{ifIndex}' is missing a name attribute.")
-            : new Link(ifIndex, name, up, macAddress, masterIndex, rxQueueCount, txQueueCount);
+            : new LinkInformation(ifIndex, name, up, macAddress, masterIndex, rxQueueCount, txQueueCount);
     }
 
     #endregion
