@@ -80,7 +80,7 @@ Configured in `.editorconfig`:
 
 GitHub Actions workflow (`.github/workflows/pipeline.yml`):
 - **Validate**: Builds and tests on `ubuntu-latest` and `ubuntu-24.04-arm` matrix, runs on push/PR to `master`
-- **Publish**: Packs and pushes to NuGet on `master` when `PUBLISH` repo variable is `true` or `auto`
+- **Publish**: Packs and pushes to NuGet when `PUBLISH` repo variable is `true`, or when `PUBLISH` is `auto` and on `master` branch
 
 ## Dependencies
 
