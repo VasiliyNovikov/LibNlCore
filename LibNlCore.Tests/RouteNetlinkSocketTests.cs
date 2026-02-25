@@ -181,7 +181,7 @@ public class RouteNetlinkSocketTests
             socket.MoveTo(link.Index, ns);
             var error = Assert.ThrowsExactly<NetlinkException>(() => socket.GetLink(name));
             Assert.AreEqual(LinuxErrorNumber.NoSuchDevice, error.ErrorNumber);
-            using (NetNs.Enter(ns))
+            using (ns.Enter())
             {
                 using var nsSocket = new RouteNetlinkSocket();
                 link = nsSocket.GetLink(name);
